@@ -14,6 +14,6 @@ Five canonical roles using default label names (`needs-triage`, `needs-info`, `r
 
 Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
 
-## Коммиты
+## Commits
 
-Все сообщения коммитов пишутся **на русском языке**. Формат — `type: краткое описание` (например, `feat:`, `fix:`, `chore:`, `docs:`), тело при необходимости тоже на русском.
+All commit messages are written in **Russian**. Format — `type: brief description` (e.g., `feat:`, `fix:`, `chore:`, `docs:`), body in Russian if needed.
