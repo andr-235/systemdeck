@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "feature-arch": {
+      "source": "PyModel/react-frontend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/feature-arch/SKILL.md",
+      "computedHash": "ca93de79f858668668220544ffd8b0f31b1741a9113432b30652f05c4307ea7e"
+    },
+    "playwright": {
+      "source": "PyModel/react-frontend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/playwright/SKILL.md",
+      "computedHash": "d415646751ad11909247835d20b85c7103d86b8f0f82d4c68a47d1afcfddd6e7"
+    },
+    "react": {
+      "source": "PyModel/react-frontend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react/SKILL.md",
+      "computedHash": "d535abdf95b4b332a1cd252ac7f8f54ec12e63c229c65d76f1fdd92e93d5fc13"
+    },
+    "typescript": {
+      "source": "PyModel/react-frontend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript/SKILL.md",
+      "computedHash": "984db4fa6caa704c4338876e4aa5b711fbfabc44d5ee3fc3580c1f7fd72762ba"
+    },
+    "vitest": {
+      "source": "PyModel/react-frontend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "b289786dc34d07a5ea4d5960ae288ad38a225763ef7be616e67e00a8d2dfd1c0"
+    }
+  }
+}
