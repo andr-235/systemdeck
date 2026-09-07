@@ -13,3 +13,7 @@ Five canonical roles using default label names (`needs-triage`, `needs-info`, `r
 ### Domain docs
 
 Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
+
+## Коммиты
+
+Все сообщения коммитов пишутся **на русском языке**. Формат — `type: краткое описание` (например, `feat:`, `fix:`, `chore:`, `docs:`), тело при необходимости тоже на русском.
