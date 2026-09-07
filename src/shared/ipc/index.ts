@@ -1,4 +1,4 @@
-export { IPC_CHANNELS, type IpcChannel } from './channels'
+export { IPC_CHANNELS, type IpcChannel } from './channels';
 export {
   IPC_ERROR_CODES,
   type IpcError,
@@ -7,13 +7,13 @@ export {
   isIpcError,
   toIpcError,
   ipcSuccess,
-  ipcFailure
-} from './errors'
+  ipcFailure,
+} from './errors';
 export {
   type PingRequest,
   type PingResponse,
   type IpcContracts,
   type IpcRequest,
   type IpcResponse,
-  type IpcResultFor
-} from './contracts'
+  type IpcResultFor,
+} from './contracts';

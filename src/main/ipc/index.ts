@@ -1,43 +1,48 @@
-import { ipcMain } from 'electron'
-import { IPC_CHANNELS } from '@shared/ipc/channels'
-import { SHARED_CONTRACT_VERSION } from '@shared/api'
-import type { IpcRequest, IpcResponse } from '@shared/ipc/contracts'
-import { ipcFailure, ipcSuccess, type IpcResult } from '@shared/ipc/errors'
+import { ipcMain } from 'electron';
+import { IPC_CHANNELS, type IpcChannel } from '@shared/ipc/channels';
+import { SHARED_CONTRACT_VERSION } from '@shared/api';
+import type { IpcRequest, IpcResponse } from '@shared/ipc/contracts';
+import { ipcFailure, ipcSuccess, type IpcResult } from '@shared/ipc/errors';
 
-const IPC_RATE_LIMIT_WINDOW_MS = 1000
-const IPC_RATE_LIMIT_MAX = 20
-const ipcRateMap = new Map<string, number[]>()
+const IPC_RATE_LIMIT_WINDOW_MS = 1000;
+const IPC_RATE_LIMIT_MAX = 20;
+const ipcRateMap = new Map<string, number[]>();
 
-function isRateLimited(channel: string): boolean {
-  const now = Date.now()
-  const hits = ipcRateMap.get(channel) ?? []
-  const recent = hits.filter((t) => now - t < IPC_RATE_LIMIT_WINDOW_MS)
-  recent.push(now)
-  ipcRateMap.set(channel, recent)
-  return recent.length > IPC_RATE_LIMIT_MAX
+function isRateLimited(channel: IpcChannel | string): boolean {
+  const now = Date.now();
+  const hits = ipcRateMap.get(channel) ?? [];
+  const recent = hits.filter((t) => now - t < IPC_RATE_LIMIT_WINDOW_MS);
+  recent.push(now);
+  ipcRateMap.set(channel, recent);
+  return recent.length > IPC_RATE_LIMIT_MAX;
 }
 
-function withSafeHandler<TReq, TRes>(
-  channel: string,
+/** @internal — только для тестов, сбрасывает rate-limit между кейсами */
+export function __clearIpcRateMapForTests(): void {
+  ipcRateMap.clear();
+}
+
+export function withSafeHandler<TReq, TRes>(
+  channel: IpcChannel | string,
   handler: (request: TReq) => Promise<TRes> | TRes
 ): (event: Electron.IpcMainInvokeEvent, request: TReq) => Promise<IpcResult<TRes>> {
   return async (_event, request) => {
     if (isRateLimited(channel)) {
-      return ipcFailure({ code: 'RATE_LIMITED', message: 'Too many requests' })
+      return ipcFailure({ code: 'RATE_LIMITED', message: 'Too many requests' });
     }
     try {
-      const data = await handler(request)
-      return ipcSuccess(data)
+      const data = await handler(request);
+      return ipcSuccess(data);
     } catch (error) {
-      console.error(`[ipc:${channel}]`, error)
-      return ipcFailure(error)
+      console.error(`[ipc:${channel}]`, error);
+      return ipcFailure(error);
     }
-  }
+  };
 }
 
-type PingChannel = typeof IPC_CHANNELS.ping
+type PingChannel = typeof IPC_CHANNELS.ping;
 
-function createPingHandler(): (
+export function createPingHandler(): (
   event: Electron.IpcMainInvokeEvent,
   request: IpcRequest<PingChannel>
 ) => Promise<IpcResult<IpcResponse<PingChannel>>> {
@@ -46,17 +51,17 @@ function createPingHandler(): (
     async (request) => {
       // Validation: PingRequest must be void/undefined — reject any payload (future-proof)
       if (request !== undefined && request !== null) {
-        throw new Error('Invalid ping payload')
+        throw new Error('Invalid ping payload');
       }
       return {
         pong: true as const,
         contractVersion: SHARED_CONTRACT_VERSION,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      };
     }
-  )
+  );
 }
 
 export function registerIpcHandlers(): void {
-  ipcMain.handle(IPC_CHANNELS.ping, createPingHandler())
+  ipcMain.handle(IPC_CHANNELS.ping, createPingHandler());
 }

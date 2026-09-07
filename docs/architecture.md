@@ -26,29 +26,36 @@ graph TD
 
 ## Разрешённые направления (таблица)
 
-| Импортёр | Может импортировать | Запрещено |
-|----------|---------------------|-----------|
-| `src/main/**` | `src/shared/**`, `electron`, `node:*`, `@electron-toolkit/*` | `src/renderer/**`, `src/preload/**` (кроме preload пути в `webPreferences`) |
-| `src/preload/**` | `src/shared/**`, `electron` (`contextBridge`) | `src/main/**`, `src/renderer/**`, `node:fs` вне необходимости |
-| `src/renderer/**` | `src/shared/**`, `react`, `vite` | `electron`, `node:*`, `src/main/**`, `src/preload/**` |
-| `src/shared/**` | типы/`const`/`as const` + чистые хелперы без runtime (`toIpcError`, `ipcSuccess`/`ipcFailure`, `isIpcError`) | `electron`, `node:*`, любой слой |
+| Импортёр          | Может импортировать                                                                                          | Запрещено                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `src/main/**`     | `src/shared/**`, `electron`, `node:*`, `@electron-toolkit/*`                                                 | `src/renderer/**`, `src/preload/**` (кроме preload пути в `webPreferences`) |
+| `src/preload/**`  | `src/shared/**`, `electron` (`contextBridge`)                                                                | `src/main/**`, `src/renderer/**`, `node:fs` вне необходимости               |
+| `src/renderer/**` | `src/shared/**`, `react`, `vite`                                                                             | `electron`, `node:*`, `src/main/**`, `src/preload/**`                       |
+| `src/shared/**`   | типы/`const`/`as const` + чистые хелперы без runtime (`toIpcError`, `ipcSuccess`/`ipcFailure`, `isIpcError`) | `electron`, `node:*`, любой слой                                            |
 
-Enforcement на SD-002: раздельные `tsconfig` (project references), алиасы `@shared/*` + `@renderer/*`, документация + автоматическая проверка `npm run check:boundaries` (`scripts/check-boundaries.mjs` — Renderer -/-> `electron`/`node:*`/`@electron-toolkit`, Shared -/-> `electron`/`node:*`, `contextBridge` только в `src/preload`). Проверка встроена в `npm run build`. Полный линт (`no-restricted-imports`, `dependency-cruiser`, формат) вводится в SD-004.
+Enforcement на SD-002: раздельные `tsconfig` (project references), алиасы `@shared/*` + `@renderer/*`, документация + автоматическая проверка `npm run check:boundaries` (`scripts/check-boundaries.mjs` — Renderer -/-> `electron`/`node:*`/`@electron-toolkit`, Shared -/-> `electron`/`node:*`, `contextBridge` только в `src/preload`). Проверка встроена в `npm run build`. Полный линт (`no-restricted-imports` в `eslint.config.mjs:43-84`) + формат + тесты введён в SD-004 (см. ADR 0004), `npm run check` — единый gate.
 
 ## Безопасность окна
 
-`src/main/index.ts` создаёт `BrowserWindow` с:
+`src/main/index.ts` создаёт `BrowserWindow` с (SD-002 + харденинг best practice):
 
 ```ts
 webPreferences: {
   preload: join(__dirname, '../preload/index.js'),
   contextIsolation: true,
   nodeIntegration: false,
-  sandbox: true
+  nodeIntegrationInWorker: false,
+  nodeIntegrationInSubFrames: false,
+  sandbox: true,
+  webSecurity: true,
+  allowRunningInsecureContent: false,
+  experimentalFeatures: false
 }
 ```
 
-`contextIsolation: true` + `nodeIntegration: false` + `sandbox: true` — дефолты SD-002 (см. ADR 0002). Renderer не получает `require`, весь доступ через `window.api`.
+`app.enableSandbox()` — глобальный sandbox, `contextIsolation: true` + `nodeIntegration: false` + `sandbox: true` — дефолты SD-002 (см. ADR 0002). Renderer не получает `require`, весь доступ через `window.api`. Дополнительно: `setWindowOpenHandler` deny + `shell.openExternal` только `https:/http:`, `setPermissionRequestHandler` deny-all на `mainWindow` и `session.defaultSession`, `optimizer.watchWindowShortcuts`.
+
+CSP: `src/renderer/index.html:6-9` — `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">`.
 
 ## Preload-контракт
 
@@ -64,15 +71,19 @@ webPreferences: {
 - Запрещено: `import 'electron'`, `import 'node:*'`, runtime зависимости от Electron. Проверка: `npm run check:boundaries` и `grep -r "from 'electron'" src/shared` — пусто.
 - Алиас `@shared/*` резолвится в `tsconfig.node.json`, `tsconfig.web.json` и `electron.vite.config.ts` (main/preload/renderer).
 
-## Проверки
+## Проверки (SD-004 baseline)
 
 ```bash
+npm run lint             # eslint flat, no-restricted-imports
+npm run format:check     # prettier --check
 npm run typecheck        # tsc по обоим проектам
 npm run check:boundaries # границы слоёв (Renderer/Shared/contextBridge)
+npm run test             # vitest projects node/jsdom
+npm run check            # lint && format:check && check:boundaries && typecheck && test
 npm run build            # typecheck + check:boundaries + electron-vite build
 ```
 
 ## Дальше
 
-- SD-003 — типизированные IPC: имена каналов и `request/response` типы в `Shared`, `ipcMain.handle` в Main, `ipcRenderer.invoke` только через Preload.
-- SD-004 — `eslint` `no-restricted-imports` + `dependency-cruiser` + формат/тесты (расширяет `check:boundaries`).
+- SD-003 — типизированные IPC: имена каналов и `request/response` типы в `Shared`, `ipcMain.handle` в Main, `ipcRenderer.invoke` только через Preload — выполнено.
+- SD-004 — `eslint` `no-restricted-imports` + формат + Vitest — выполнено (ADR 0004).
