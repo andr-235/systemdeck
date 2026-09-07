@@ -2,26 +2,8 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import CpuWidget from './CpuWidget';
+import { setMockApi } from '../test-utils';
 import type { CpuInfoResponse, CpuUsageResponse, IpcResult } from '@shared/ipc';
-
-function setMockApi(overrides: {
-  getInfo?: Window['api']['cpu']['getInfo'];
-  getUsage?: Window['api']['cpu']['getUsage'];
-}): void {
-  const api = window as unknown as { api: Window['api'] };
-  api.api = {
-    ping: vi.fn() as unknown as Window['api']['ping'],
-    reportRendererError: vi.fn() as unknown as Window['api']['reportRendererError'],
-    cpu: {
-      getInfo:
-        (overrides.getInfo as Window['api']['cpu']['getInfo']) ??
-        (async () => ({ ok: true as const, data: null })),
-      getUsage:
-        (overrides.getUsage as Window['api']['cpu']['getUsage']) ??
-        (async () => ({ ok: true as const, data: null })),
-    },
-  };
-}
 
 const infoOk: CpuInfoResponse = {
   model: 'Intel Core i7-13700',
@@ -144,5 +126,42 @@ describe('Renderer — CpuWidget (jsdom project)', () => {
       expect(screen.getByRole('status')).toHaveTextContent('недоступно');
     });
     expect(screen.queryByText('0%')).not.toBeInTheDocument();
+  });
+
+  it('shows loading skeleton before the first usage response', () => {
+    const never = vi.fn(async () => new Promise<IpcResult<CpuUsageResponse>>(() => {}));
+    setMockApi({ getUsage: never });
+
+    render(<CpuWidget />);
+
+    expect(screen.getByRole('status', { name: 'загрузка данных CPU' })).toBeInTheDocument();
+    expect(screen.queryByText('недоступно')).not.toBeInTheDocument();
+  });
+
+  it('colors overall bar by status thresholds (warn >=70, crit >=90), value stays visible as text', async () => {
+    const cases: Array<{ overall: number; color: string }> = [
+      { overall: 30, color: 'var(--sd-color-success)' },
+      { overall: 75, color: 'var(--sd-color-accent)' },
+      { overall: 95, color: 'var(--sd-color-destructive)' },
+    ];
+
+    for (const { overall, color } of cases) {
+      cleanup();
+      const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
+        ok: true,
+        data: { overall, perCore: [overall], timestamp: 1000 },
+      }));
+      setMockApi({ getUsage });
+
+      render(<CpuWidget />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('cpu-overall-fill')).toHaveStyle({
+          background: color,
+          width: `${overall}%`,
+        });
+      });
+      expect(screen.getByRole('status')).toHaveTextContent(`${overall}%`);
+    }
   });
 });

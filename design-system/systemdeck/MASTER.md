@@ -28,9 +28,12 @@
 | Muted       | `#E9EEF6` | `--color-muted`       |
 | Border      | `#DBEAFE` | `--color-border`      |
 | Destructive | `#DC2626` | `--color-destructive` |
+| Success     | `#16A34A` | `--color-success`     |
 | Ring        | `#1E40AF` | `--color-ring`        |
 
 **Color Notes:** Blue data + amber highlights [Accent adjusted from #F59E0B for WCAG 3:1]
+
+**Implementation note:** в коде приложения токены используются с префиксом `--sd-` (`--sd-color-primary` и т.д.), чтобы не конфликтовать с шаблонными `--color-*` из `base.css`. Значения совпадают с таблицей; `--color-success` — зелёный статус ok в палитре статусов dashboard (ok/warn/crit).
 
 ### Typography
 

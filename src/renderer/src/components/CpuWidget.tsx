@@ -6,18 +6,19 @@ const POLL_INTERVAL_MS = 1000;
 const cardStyle: React.CSSProperties = {
   padding: 16,
   borderRadius: 12,
-  border: '1px solid #DBEAFE',
-  background: '#F8FAFC',
+  border: '1px solid var(--sd-color-border)',
+  background: 'var(--sd-color-background)',
+  color: 'var(--sd-color-foreground)',
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
   minWidth: 280,
 };
 
-const barStyle: React.CSSProperties = {
+const barTrackStyle: React.CSSProperties = {
   height: 8,
   borderRadius: 4,
-  background: '#E9EEF6',
+  background: 'var(--sd-color-muted)',
   overflow: 'hidden',
 };
 
@@ -25,9 +26,16 @@ function formatUsage(value: number | null): string {
   return value === null ? 'недоступно' : `${value}%`;
 }
 
+function overallStatusColor(value: number): string {
+  if (value >= 90) return 'var(--sd-color-destructive)';
+  if (value >= 70) return 'var(--sd-color-accent)';
+  return 'var(--sd-color-success)';
+}
+
 function CpuWidget(): React.JSX.Element {
   const [info, setInfo] = useState<CpuInfoResponse | null>(null);
   const [usage, setUsage] = useState<CpuUsageResponse | null>(null);
+  const [usageReceived, setUsageReceived] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +48,7 @@ function CpuWidget(): React.JSX.Element {
       if (cancelled) return;
       if (result.ok) {
         setUsage(result.data);
+        setUsageReceived(true);
         setError(null);
       } else {
         setError(result.error.message);
@@ -72,7 +81,7 @@ function CpuWidget(): React.JSX.Element {
     };
   }, []);
 
-  const fillWidth = usage?.overall ?? null;
+  const overall = usage?.overall ?? null;
 
   return (
     <section style={cardStyle} aria-label="CPU">
@@ -90,31 +99,45 @@ function CpuWidget(): React.JSX.Element {
 
       <div>
         <strong>Загрузка: </strong>
-        <span role="status">{formatUsage(fillWidth)}</span>
-        {fillWidth !== null && (
-          <div style={{ ...barStyle, marginTop: 4 }} role="presentation">
+        {!usageReceived ? (
+          <span
+            role="status"
+            aria-label="загрузка данных CPU"
+            className="skeleton-bar"
+            style={{ width: 96, height: 8 }}
+          />
+        ) : (
+          <span role="status" aria-live="polite">
+            {formatUsage(overall)}
+          </span>
+        )}
+        {usageReceived && overall !== null && (
+          <div style={{ ...barTrackStyle, marginTop: 4 }} role="presentation">
             <div
+              data-testid="cpu-overall-fill"
+              className="cpu-widget-fill"
               style={{
-                width: `${Math.min(100, fillWidth)}%`,
+                width: `${Math.min(100, overall)}%`,
                 height: '100%',
-                background: '#1E40AF',
+                background: overallStatusColor(overall),
               }}
             />
           </div>
         )}
       </div>
 
-      {usage && (
+      {usageReceived && usage && (
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', gap: 8 }}>
           {usage.perCore.map((core, i) => (
             <li key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}>
               <span>{core === null ? '—' : `${core}%`}</span>
-              <div style={{ ...barStyle, width: 24 }}>
+              <div style={{ ...barTrackStyle, width: 24 }}>
                 <div
+                  className="cpu-widget-fill"
                   style={{
                     width: '100%',
                     height: `${core === null ? 0 : Math.min(100, core)}%`,
-                    background: '#3B82F6',
+                    background: 'var(--sd-color-secondary)',
                   }}
                 />
               </div>
@@ -124,7 +147,7 @@ function CpuWidget(): React.JSX.Element {
       )}
 
       {error && (
-        <p role="alert" style={{ margin: 0, color: '#DC2626', fontSize: 12 }}>
+        <p role="alert" style={{ margin: 0, color: 'var(--sd-color-destructive)', fontSize: 12 }}>
           CPU: {error}
         </p>
       )}

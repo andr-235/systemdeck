@@ -1,5 +1,51 @@
 @import './base.css';
 
+:root {
+  --sd-color-primary: #1e40af;
+  --sd-color-on-primary: #ffffff;
+  --sd-color-secondary: #3b82f6;
+  --sd-color-accent: #d97706;
+  --sd-color-background: #f8fafc;
+  --sd-color-foreground: #1e3a8a;
+  --sd-color-muted: #e9eef6;
+  --sd-color-border: #dbeafe;
+  --sd-color-destructive: #dc2626;
+  --sd-color-ring: #1e40af;
+  --sd-color-success: #16a34a;
+}
+
+.cpu-widget-fill {
+  transition:
+    width 250ms ease,
+    height 250ms ease;
+}
+
+.skeleton-bar {
+  display: inline-block;
+  border-radius: 4px;
+  background: var(--sd-color-muted);
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cpu-widget-fill {
+    transition: none;
+  }
+  .skeleton-bar {
+    animation: none;
+  }
+}
+
 body {
   display: flex;
   align-items: center;
