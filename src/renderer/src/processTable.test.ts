@@ -1,27 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { filterProcesses, sortProcesses } from './processTable';
-import type { ProcessEntry } from '@shared/ipc';
-
-function entry(overrides: Partial<ProcessEntry>): ProcessEntry {
-  return {
-    pid: 1,
-    name: 'a.exe',
-    cpuPercent: 0,
-    memBytes: 1024,
-    execPath: null,
-    protected: false,
-    commandLine: null,
-    threadCount: 1,
-    creationTime: null,
-    parentPid: null,
-    ...overrides,
-  };
-}
+import { filterProcesses, sortProcesses, findProcessById } from './processTable';
+import { makeProcessEntry, makeProcessSnapshot } from './test-utils';
 
 const rows = [
-  entry({ pid: 3, name: 'webkit.exe', cpuPercent: 50, memBytes: 2048 }),
-  entry({ pid: 1, name: 'svchost.exe', cpuPercent: 5, memBytes: 512, protected: true }),
-  entry({ pid: 2, name: 'chrome.exe', cpuPercent: 80, memBytes: 1024 }),
+  makeProcessEntry({ pid: 3, name: 'webkit.exe', cpuPercent: 50, memBytes: 2048 }),
+  makeProcessEntry({ pid: 1, name: 'svchost.exe', cpuPercent: 5, memBytes: 512, protected: true }),
+  makeProcessEntry({ pid: 2, name: 'chrome.exe', cpuPercent: 80, memBytes: 1024 }),
 ];
 
 describe('filterProcesses', () => {
@@ -74,5 +58,22 @@ describe('sortProcesses', () => {
     const out = sortProcesses(rows, 'pid', 'asc');
     expect(rows).toEqual(copy);
     expect(out[0].pid).toBe(1);
+  });
+});
+
+describe('findProcessById', () => {
+  const snapshot = makeProcessSnapshot({ processes: rows });
+
+  it('returns the entry for a matching pid', () => {
+    expect(findProcessById(snapshot, 2)?.name).toBe('chrome.exe');
+  });
+
+  it('returns null for a missing pid', () => {
+    expect(findProcessById(snapshot, 999)).toBeNull();
+  });
+
+  it('returns null for null snapshot or null pid', () => {
+    expect(findProcessById(null, 1)).toBeNull();
+    expect(findProcessById(snapshot, null)).toBeNull();
   });
 });

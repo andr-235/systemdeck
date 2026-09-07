@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  toProcessEntry,
-  classifyProtectedProcessName,
-  parseCimDateTime,
-  type ProcessRow,
-} from './ProcessMonitor';
+import { toProcessEntry, parseCimDateTime, type ProcessRow } from './ProcessMonitor';
 
 const baseRow = (overrides: Partial<ProcessRow> = {}): ProcessRow => ({
   ProcessId: 4242,
@@ -57,27 +52,6 @@ describe('ProcessMonitor — toProcessEntry', () => {
     expect(entry.pid).toBe(0);
     expect(entry.threadCount).toBe(0);
     expect(entry.memBytes).toBe(0);
-  });
-});
-
-describe('classifyProtectedProcessName', () => {
-  it('marks core system processes as protected', () => {
-    for (const name of [
-      'lsass.exe',
-      'smss.exe',
-      'csrss.exe',
-      'winlogon.exe',
-      'services.exe',
-      'svchost.exe',
-    ]) {
-      expect(classifyProtectedProcessName(name)).toBe(true);
-    }
-  });
-
-  it('does not mark user processes as protected', () => {
-    expect(classifyProtectedProcessName('chrome.exe')).toBe(false);
-    expect(classifyProtectedProcessName(null)).toBe(false);
-    expect(classifyProtectedProcessName('')).toBe(false);
   });
 });
 

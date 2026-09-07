@@ -10,6 +10,7 @@ import SystemInfoWidget from './components/SystemInfoWidget';
 import ProcessWidget from './components/ProcessWidget';
 import ProcessPage from './components/ProcessPage';
 import ProcessDetails from './components/ProcessDetails';
+import { findProcessById } from './processTable';
 
 type Page = 'dashboard' | 'processes';
 
@@ -32,10 +33,7 @@ function App(): React.JSX.Element {
     setPage(next);
   };
 
-  const selectedEntry =
-    selectedPid === null
-      ? null
-      : (processSnapshot?.processes.find((p) => p.pid === selectedPid) ?? null);
+  const selectedEntry = findProcessById(processSnapshot, selectedPid);
 
   return (
     <div className="sd-shell">

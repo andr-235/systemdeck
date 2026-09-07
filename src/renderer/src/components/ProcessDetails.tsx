@@ -11,7 +11,13 @@ type ProcessDetailsProps = {
   onClear: () => void;
 };
 
-function Row({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}): React.JSX.Element {
   return (
     <div style={{ display: 'flex', gap: 8, fontSize: 13 }}>
       <span style={{ opacity: 0.7, flex: '0 0 180px' }}>{label}</span>
@@ -97,16 +103,16 @@ function ProcessDetails({
           ✕
         </button>
       </div>
-      <Row label="PID">{entry.pid}</Row>
-      <Row label="CPU%">{entry.cpuPercent}%</Row>
-      <Row label="Память">{formatBytes(entry.memBytes)}</Row>
-      <Row label="Исполняемый файл">{entry.execPath ?? '—'}</Row>
-      <Row label="Командная строка">{entry.commandLine ?? '—'}</Row>
-      <Row label="Потоков">{entry.threadCount}</Row>
-      <Row label="Запущен">
+      <DetailRow label="PID">{entry.pid}</DetailRow>
+      <DetailRow label="CPU%">{entry.cpuPercent}%</DetailRow>
+      <DetailRow label="Память">{formatBytes(entry.memBytes)}</DetailRow>
+      <DetailRow label="Исполняемый файл">{entry.execPath ?? '—'}</DetailRow>
+      <DetailRow label="Командная строка">{entry.commandLine ?? '—'}</DetailRow>
+      <DetailRow label="Потоков">{entry.threadCount}</DetailRow>
+      <DetailRow label="Запущен">
         {entry.creationTime === null ? '—' : formatDateTime(entry.creationTime)}
-      </Row>
-      <Row label="Родительский PID">{entry.parentPid ?? '—'}</Row>
+      </DetailRow>
+      <DetailRow label="Родительский PID">{entry.parentPid ?? '—'}</DetailRow>
       {terminateError && (
         <div role="alert" style={{ fontSize: 13, color: 'var(--sd-color-danger)' }}>
           {terminateError}
@@ -114,19 +120,10 @@ function ProcessDetails({
       )}
       <button
         type="button"
+        className="sd-danger-button"
         disabled={entry.protected || terminating}
         onClick={() => setConfirmOpen(true)}
-        style={{
-          border: 'none',
-          borderRadius: 6,
-          background: 'var(--sd-color-danger, #d33)',
-          color: '#fff',
-          cursor: entry.protected || terminating ? 'not-allowed' : 'pointer',
-          opacity: entry.protected || terminating ? 0.5 : 1,
-          padding: '6px 12px',
-          justifySelf: 'start',
-          minHeight: 32,
-        }}
+        style={{ justifySelf: 'start' }}
       >
         Завершить процесс
       </button>

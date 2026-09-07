@@ -1,7 +1,16 @@
-import type { ProcessEntry } from '@shared/ipc';
+import type { ProcessEntry, ProcessSnapshot } from '@shared/ipc';
 
 export type ProcessSortKey = 'pid' | 'name' | 'cpuPercent' | 'memBytes';
 export type ProcessSortDir = 'asc' | 'desc';
+
+/** Ищет процесс в снимке по маске выбора PID (скрывает навигацию в снapshot у вызывающего). */
+export function findProcessById(
+  snapshot: ProcessSnapshot | null,
+  pid: number | null
+): ProcessEntry | null {
+  if (snapshot === null || pid === null) return null;
+  return snapshot.processes.find((p) => p.pid === pid) ?? null;
+}
 
 export function filterProcesses(entries: ProcessEntry[], query: string): ProcessEntry[] {
   const q = query.trim().toLowerCase();

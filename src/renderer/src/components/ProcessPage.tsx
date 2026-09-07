@@ -108,9 +108,16 @@ function ProcessPage({
             {visible.map((p) => (
               <tr
                 key={p.pid}
+                tabIndex={0}
                 className={selectedPid === p.pid ? 'sd-row-selected' : ''}
                 aria-selected={selectedPid === p.pid}
                 onClick={() => onSelect(p)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(p);
+                  }
+                }}
               >
                 <td className="sd-num">{p.pid}</td>
                 <td>

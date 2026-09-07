@@ -78,20 +78,7 @@ function ConfirmDialog({
           >
             Отмена
           </button>
-          <button
-            type="button"
-            ref={confirmRef}
-            onClick={onConfirm}
-            style={{
-              border: 'none',
-              borderRadius: 6,
-              background: 'var(--sd-color-danger, #d33)',
-              color: '#fff',
-              cursor: 'pointer',
-              padding: '6px 12px',
-              minHeight: 32,
-            }}
-          >
+          <button type="button" ref={confirmRef} className="sd-danger-button" onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>

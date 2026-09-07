@@ -2,30 +2,21 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import ProcessPage from './ProcessPage';
-import type { ProcessEntry, ProcessSnapshot } from '@shared/ipc';
-
-function entry(overrides: Partial<ProcessEntry>): ProcessEntry {
-  return {
-    pid: 1,
-    name: 'a.exe',
-    cpuPercent: 0,
-    memBytes: 1024,
-    execPath: null,
-    protected: false,
-    commandLine: null,
-    threadCount: 1,
-    creationTime: null,
-    parentPid: null,
-    ...overrides,
-  };
-}
+import type { ProcessSnapshot } from '@shared/ipc';
+import { makeProcessEntry } from '../test-utils';
 
 const snapshot: ProcessSnapshot = {
   timestamp: 0,
   processes: [
-    entry({ pid: 3, name: 'webkit.exe', cpuPercent: 50, memBytes: 2048 }),
-    entry({ pid: 1, name: 'svchost.exe', cpuPercent: 5, memBytes: 512, protected: true }),
-    entry({ pid: 2, name: 'chrome.exe', cpuPercent: 80, memBytes: 1024 }),
+    makeProcessEntry({ pid: 3, name: 'webkit.exe', cpuPercent: 50, memBytes: 2048 }),
+    makeProcessEntry({
+      pid: 1,
+      name: 'svchost.exe',
+      cpuPercent: 5,
+      memBytes: 512,
+      protected: true,
+    }),
+    makeProcessEntry({ pid: 2, name: 'chrome.exe', cpuPercent: 80, memBytes: 1024 }),
   ],
 };
 
@@ -83,6 +74,24 @@ describe('Renderer — ProcessPage (jsdom project)', () => {
     const onSelect = vi.fn();
     renderPage({ onSelect });
     fireEvent.click(screen.getByText('chrome.exe'));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ pid: 2 }));
+  });
+
+  it('selects a row with Enter from the keyboard', () => {
+    const onSelect = vi.fn();
+    renderPage({ onSelect });
+    const row = screen.getByText('chrome.exe').closest('tr') as HTMLTableRowElement;
+    row.focus();
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ pid: 2 }));
+  });
+
+  it('selects a row with Space from the keyboard', () => {
+    const onSelect = vi.fn();
+    renderPage({ onSelect });
+    const row = screen.getByText('chrome.exe').closest('tr') as HTMLTableRowElement;
+    row.focus();
+    fireEvent.keyDown(row, { key: ' ' });
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ pid: 2 }));
   });
 });
