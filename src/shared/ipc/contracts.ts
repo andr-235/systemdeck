@@ -1,12 +1,13 @@
 import { IPC_CHANNELS, type IpcChannel } from './channels';
 import type { IpcResult } from './errors';
 
-export type PingRequest = void;
+export type PingRequest = {
+  version: string;
+};
 
 export type PingResponse = {
-  pong: true;
-  contractVersion: string;
-  timestamp: number;
+  version: string;
+  matched: boolean;
 };
 
 export type ReportRendererErrorRequest = {

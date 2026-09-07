@@ -1,4 +1,5 @@
-import { SHARED_CONTRACT_VERSION, type AppAPI } from '@shared/api';
+import type { AppAPI } from '@shared/api';
+import { SHARED_CONTRACT_VERSION } from '@shared/api';
 
 type MockApiOverrides = Partial<{
   ping: AppAPI['ping'];
@@ -14,7 +15,7 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
       overrides.ping ??
       (async () => ({
         ok: true as const,
-        data: { pong: true as const, contractVersion: SHARED_CONTRACT_VERSION, timestamp: 0 },
+        data: { version: SHARED_CONTRACT_VERSION, matched: true },
       })),
     reportRendererError:
       overrides.reportRendererError ?? (async () => ({ ok: true as const, data: undefined })),

@@ -1,9 +1,11 @@
 import { app, shell, BrowserWindow, session, dialog } from 'electron';
 import { join } from 'path';
+import { existsSync } from 'fs';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { registerIpcHandlers } from './ipc';
 import { initLogger, getLogger, getLogFilePath, getLogLevel } from './logger';
+import { runSmokeProbe } from './smoke';
 import { toErrorParts } from '@shared/ipc/errors';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
@@ -35,7 +37,9 @@ setupGlobalErrorHandlers();
 
 app.enableSandbox();
 
-function createWindow(): void {
+const PRELOAD_PATH = join(__dirname, '../preload/index.cjs');
+
+function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -44,7 +48,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: PRELOAD_PATH,
       contextIsolation: true,
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
@@ -54,6 +58,13 @@ function createWindow(): void {
       allowRunningInsecureContent: false,
       experimentalFeatures: false,
     },
+  });
+
+  if (!existsSync(PRELOAD_PATH)) {
+    mainLogger.error('preload file missing', { preloadPath: PRELOAD_PATH });
+  }
+  mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
+    mainLogger.error('preload-error', { preloadPath, error: toErrorParts(error) });
   });
 
   mainWindow.on('ready-to-show', () => {
@@ -91,6 +102,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
+
+  return mainWindow;
 }
 
 app.whenReady().then(() => {
@@ -133,7 +146,14 @@ app.whenReady().then(() => {
   registerIpcHandlers();
 
   mainLogger.info('creating window');
-  createWindow();
+  const mainWindow = createWindow();
+
+  if (process.env['SYSTEMDECK_SMOKE'] === '1') {
+    void runSmokeProbe(mainWindow).then((ok) => {
+      mainLogger.info('smoke finished', { ok });
+      app.exit(ok ? 0 : 1);
+    });
+  }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

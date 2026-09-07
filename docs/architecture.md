@@ -41,7 +41,7 @@ Enforcement на SD-002: раздельные `tsconfig` (project references), �
 
 ```ts
 webPreferences: {
-  preload: join(__dirname, '../preload/index.js'),
+  preload: join(__dirname, '../preload/index.cjs'),
   contextIsolation: true,
   nodeIntegration: false,
   nodeIntegrationInWorker: false,
@@ -55,6 +55,8 @@ webPreferences: {
 
 `app.enableSandbox()` — глобальный sandbox, `contextIsolation: true` + `nodeIntegration: false` + `sandbox: true` — дефолты SD-002 (см. ADR 0002). Renderer не получает `require`, весь доступ через `window.api`. Дополнительно: `setWindowOpenHandler` deny + `shell.openExternal` только `https:/http:`, `setPermissionRequestHandler` deny-all на `mainWindow` и `session.defaultSession`, `optimizer.watchWindowShortcuts`.
 
+Сборка preload принудительно CommonJS (`preload.build.rollupOptions.output.format: 'cjs'` → `out/preload/index.cjs`), потому что sandboxed preload не исполняет ESM (см. ADR 0007); `webPreferences.preload` указывает на `index.cjs`.
+
 CSP: `src/renderer/index.html:6-9` — `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">`.
 
 ## Preload-контракт
@@ -66,7 +68,7 @@ CSP: `src/renderer/index.html:6-9` — `<meta http-equiv="Content-Security-Polic
 
 ## Shared-контракт
 
-- `src/shared/api.ts` — `export interface AppAPI {}` (минимальный контракт SD-002, в SD-003 `AppAPI.ping` выведен из `IpcContracts` через `IpcResultFor<typeof IPC_CHANNELS.ping>`) + `SHARED_CONTRACT_VERSION`, `src/shared/index.ts` — barrel (`@shared` entry point).
+- `src/shared/api.ts` — `export interface AppAPI {}` (минимальный контракт SD-002); методы выведены из `IpcContracts` через `IpcResultFor<typeof IPC_CHANNELS.*>` (SD-003; `ping` — внутренний health/contract-drift чек без UI, несёт `SHARED_CONTRACT_VERSION`, Main сверяет версию — SD-012, issue #26) + `SHARED_CONTRACT_VERSION`, `src/shared/index.ts` — barrel (`@shared` entry point).
 - Разрешено: `type`, `interface`, `const` строк-литералов, `as const` объекты + чистые хелперы без `electron`/`node:*` (`IpcResult`/`IpcError`, `IPC_ERROR_CODES`, `isIpcError`/`toIpcError`/`ipcSuccess`/`ipcFailure`, `IpcContracts` + `IpcRequest`/`IpcResponse`/`IpcResultFor`).
 - Запрещено: `import 'electron'`, `import 'node:*'`, runtime зависимости от Electron. Проверка: `npm run check:boundaries` и `grep -r "from 'electron'" src/shared` — пусто.
 - Алиас `@shared/*` резолвится в `tsconfig.node.json`, `tsconfig.web.json` и `electron.vite.config.ts` (main/preload/renderer).
@@ -79,6 +81,7 @@ npm run format:check     # prettier --check
 npm run typecheck        # tsc по обоим проектам
 npm run check:boundaries # границы слоёв (Renderer/Shared/contextBridge)
 npm run test             # vitest projects node/jsdom
+npm run smoke            # реальный Electron: preload bridge + Application API (issue #26)
 npm run check            # lint && format:check && check:boundaries && typecheck && test
 npm run build            # typecheck + check:boundaries + electron-vite build
 ```

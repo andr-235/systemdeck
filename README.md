@@ -1,6 +1,6 @@
 # SystemDeck
 
-Настольное приложение Electron для системного мониторинга. Текущий этап — **Bootstrap** (SD-001): пустая оболочка, доказывает toolchain без продуктовых фич.
+Настольное приложение Electron для системного мониторинга. Текущее состояние — Shell SystemDeck с Dashboard: карточка CPU с живой загрузкой и скелетонами, метрики через `window.api`.
 
 ## Стек
 
@@ -11,7 +11,7 @@
 ## Архитектура (Main / Preload / Renderer)
 
 - **Main** (`src/main/index.ts`) — главный процесс Node, жизненный цикл окна. `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, окно 900×670, заголовок `SystemDeck`.
-- **Preload** (`src/preload/index.ts` + `index.d.ts`) — изолированный мост, единственное место с `contextBridge`. Экспортирует только `window.api: AppAPI` (тип из `src/shared/api.ts`), без `electronAPI`, без IPC-каналов до SD-003.
+- **Preload** (`src/preload/index.ts` + `index.d.ts`) — изолированный мост, единственное место с `contextBridge`. Экспортирует только `window.api: AppAPI` (тип из `src/shared/api.ts`), без `electronAPI`. Собирается как CommonJS (`out/preload/index.cjs`) — sandboxed preload не исполняет ESM (ADR 0007).
 - **Renderer** (`src/renderer/src/`) — React UI, без доступа к Node/Electron Privileged API, отдельный `tsconfig.web.json`, HMR через `electron-vite`.
 - **Shared** (`src/shared/`) — кросс-слойные контракты без runtime `electron` (типы + `const` литералы), алиас `@shared/*`, доступен всем слоям.
 
@@ -32,10 +32,11 @@ npm run dev          # запуск Electron в dev (Windows)
 npm run typecheck    # tsc по всем проектам
 npm run build        # typecheck + electron-vite build
 npm run preview      # предпросмотр сборки
+npm run smoke        # реальный Electron: preload bridge + Application API (после build)
 npm run build:win    # сборка Windows-артефакта (SD-006)
 ```
 
-Проверка критериев SD-001: `npm install` успешно, `npm run dev` запускает окно `SystemDeck` без ошибок консоли, `npm run typecheck` без ошибок, три точки входа разделены.
+Проверка: `npm run check` (lint + format + boundaries + typecheck + vitest); `npm run smoke` проверяет preload bridge на реальном Electron после сборки.
 
 ## Структура
 
@@ -51,11 +52,11 @@ docs/architecture.md      # граф зависимостей
 docs/adr/0002-...         # границы слоёв
 ```
 
-Дальше: SD-002 (архитектура слоёв), SD-003 (типизированные IPC), SD-004 (линт/тесты), SD-005 (логи), SD-006 (упаковка Windows).
+Дальше: грид Dashboard (карточки RAM/дисков/сети), streaming-графики CPU (см. `design-system/systemdeck/pages/dashboard.md`).
 
 ## Документация домена
 
-- `CONTEXT.md` — глоссарий (SystemDeck, Main, Preload, Renderer, Bootstrap, Shared, Application API, Privileged API)
+- `CONTEXT.md` — глоссарий (SystemDeck, Main, Preload, Renderer, Shell, Dashboard, Shared, Application API, Privileged API)
 - `docs/architecture.md` — границы слоёв и разрешённые зависимости
 - `docs/adr/0001-bootstrap-electron-vite-stack.md` — решение по стеку
 - `docs/adr/0002-main-preload-renderer-boundaries.md` — границы слоёв SD-002

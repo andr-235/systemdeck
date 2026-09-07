@@ -6,7 +6,7 @@ import type {
   CpuInfoResponse,
   CpuUsageResponse,
   IpcResult,
-  PingResponse,
+  PingRequest,
   ReportRendererErrorRequest,
 } from '@shared/ipc';
 
@@ -16,7 +16,8 @@ const cpu: CpuApi = {
 };
 
 const api: AppAPI = {
-  ping: (): Promise<IpcResult<PingResponse>> => ipcRenderer.invoke(IPC_CHANNELS.ping),
+  ping: (request: PingRequest): Promise<IpcResult<{ version: string; matched: boolean }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.ping, request),
   reportRendererError: (request: ReportRendererErrorRequest): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IPC_CHANNELS.reportRendererError, request),
   cpu,

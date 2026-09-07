@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
+import { SHARED_CONTRACT_VERSION } from '@shared/api';
 
 // Mock electron before importing main ipc module
 vi.mock('electron', () => ({
@@ -18,7 +18,7 @@ import {
 } from './index';
 import { ipcMain } from 'electron';
 
-describe('Main IPC — ping handler (node project)', () => {
+describe('Main IPC — handlers (node project)', () => {
   beforeEach(() => {
     __clearIpcRateMapForTests();
     vi.clearAllMocks();
@@ -35,28 +35,36 @@ describe('Main IPC — ping handler (node project)', () => {
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.cpuUsage, expect.any(Function));
   });
 
-  it('ping handler returns ok:true with pong, contractVersion and timestamp', async () => {
+  it('ping handler echoes version and matches current contract version', async () => {
     const handler = createPingHandler();
-    const result = await handler({} as Electron.IpcMainInvokeEvent, undefined);
+    const result = await handler({} as Electron.IpcMainInvokeEvent, {
+      version: SHARED_CONTRACT_VERSION,
+    });
+    expect(result).toEqual({
+      ok: true,
+      data: { version: SHARED_CONTRACT_VERSION, matched: true },
+    });
+  });
 
+  it('ping handler reports drift when version differs', async () => {
+    const handler = createPingHandler();
+    const result = await handler({} as Electron.IpcMainInvokeEvent, { version: 'sd-001' });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.pong).toBe(true);
-      expect(result.data.contractVersion).toBe(SHARED_CONTRACT_VERSION);
-      expect(typeof result.data.timestamp).toBe('number');
+      expect(result.data).toEqual({ version: SHARED_CONTRACT_VERSION, matched: false });
     }
   });
 
-  it('ping handler rejects payload and returns ok:false without stack', async () => {
+  it('ping handler rejects invalid payload', async () => {
     const handler = createPingHandler();
-    // @ts-expect-error — intentionally passing invalid payload to test validation
-    const result = await handler({} as Electron.IpcMainInvokeEvent, { invalid: true });
-
+    const result = await handler(
+      {} as Electron.IpcMainInvokeEvent,
+      {
+        version: 42,
+      } as unknown as { version: string }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.code).toBeDefined();
-      expect(result.error.message).toBeDefined();
-      // Must not leak stack
       expect((result.error as Record<string, unknown>).stack).toBeUndefined();
     }
   });

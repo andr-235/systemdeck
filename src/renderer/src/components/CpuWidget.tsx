@@ -44,31 +44,49 @@ function CpuWidget(): React.JSX.Element {
     let infoTimer: number | undefined;
 
     async function pollUsage(): Promise<void> {
-      const result = await window.api.cpu.getUsage();
-      if (cancelled) return;
-      if (result.ok) {
-        setUsage(result.data);
-        setUsageReceived(true);
-        setError(null);
-      } else {
-        setError(result.error.message);
+      try {
+        const result = await window.api.cpu.getUsage();
+        if (cancelled) return;
+        if (result.ok) {
+          setUsage(result.data);
+          setUsageReceived(true);
+          setError(null);
+        } else {
+          setError(result.error.message);
+        }
+      } catch {
+        // транспортный сбой IPC — пользовательский текст, сырой ошибки в UI нет
+        if (cancelled) return;
+        setError('данные недоступны');
+      } finally {
+        if (!cancelled) {
+          usageTimer = window.setTimeout(() => {
+            void pollUsage();
+          }, POLL_INTERVAL_MS);
+        }
       }
-      usageTimer = window.setTimeout(() => {
-        void pollUsage();
-      }, POLL_INTERVAL_MS);
     }
 
     async function loadInfo(): Promise<void> {
-      const result = await window.api.cpu.getInfo();
-      if (cancelled) return;
-      if (result.ok) {
-        setInfo(result.data);
-        return;
+      let retry = false;
+      try {
+        const result = await window.api.cpu.getInfo();
+        if (cancelled) return;
+        if (result.ok) {
+          setInfo(result.data);
+        } else {
+          retry = true;
+        }
+      } catch {
+        if (cancelled) return;
+        retry = true;
       }
       // info кэшируется в Main — ретрай дёшев, отсутствие считается временным
-      infoTimer = window.setTimeout(() => {
-        void loadInfo();
-      }, POLL_INTERVAL_MS);
+      if (retry && !cancelled) {
+        infoTimer = window.setTimeout(() => {
+          void loadInfo();
+        }, POLL_INTERVAL_MS);
+      }
     }
 
     void pollUsage();
@@ -88,7 +106,7 @@ function CpuWidget(): React.JSX.Element {
       <h2 style={{ margin: 0, fontSize: 14 }}>CPU</h2>
 
       {info && (
-        <p style={{ margin: 0, fontSize: 12 }}>
+        <p className="sd-num" style={{ margin: 0, fontSize: 12 }}>
           {info.model || 'модель неизвестна'} · {info.logicalCores} логических ядер ·{' '}
           {info.physicalCores === null
             ? 'физические ядра: недоступно'
@@ -107,7 +125,7 @@ function CpuWidget(): React.JSX.Element {
             style={{ width: 96, height: 8 }}
           />
         ) : (
-          <span role="status" aria-live="polite">
+          <span className="sd-num" role="status" aria-live="polite">
             {formatUsage(overall)}
           </span>
         )}
@@ -130,7 +148,7 @@ function CpuWidget(): React.JSX.Element {
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', gap: 8 }}>
           {usage.perCore.map((core, i) => (
             <li key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}>
-              <span>{core === null ? '—' : `${core}%`}</span>
+              <span className="sd-num">{core === null ? '—' : `${core}%`}</span>
               <div style={{ ...barTrackStyle, width: 24 }}>
                 <div
                   className="cpu-widget-fill"

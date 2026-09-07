@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { IPC_CHANNELS, type IpcChannel } from '@shared/ipc/channels';
-import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import type { IpcRequest, IpcResponse } from '@shared/ipc/contracts';
+import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import {
   IPC_ERROR_CODES,
   ipcFailure,
@@ -12,7 +12,6 @@ import {
 import { getLogger } from '../logger';
 import { CpuMonitor } from '../monitoring/cpu/CpuMonitor';
 import { registerCpuIpc } from './cpu';
-import { assertNoPayload } from './validate';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
 const IPC_RATE_LIMIT_MAX = 20;
@@ -53,27 +52,30 @@ export function withSafeHandler<TReq, TRes>(
   };
 }
 
-type PingChannel = typeof IPC_CHANNELS.ping;
+type ReportChannel = typeof IPC_CHANNELS.reportRendererError;
 
 export function createPingHandler(): (
   event: Electron.IpcMainInvokeEvent,
-  request: IpcRequest<PingChannel>
-) => Promise<IpcResult<IpcResponse<PingChannel>>> {
-  return withSafeHandler<IpcRequest<PingChannel>, IpcResponse<PingChannel>>(
-    IPC_CHANNELS.ping,
+  request: IpcRequest<typeof IPC_CHANNELS.ping>
+) => Promise<IpcResult<IpcResponse<typeof IPC_CHANNELS.ping>>> {
+  const channel = IPC_CHANNELS.ping;
+  return withSafeHandler<IpcRequest<typeof channel>, IpcResponse<typeof channel>>(
+    channel,
     async (request) => {
-      // Validation: PingRequest must be void/undefined — reject any payload (future-proof)
-      assertNoPayload(request, 'ping');
-      return {
-        pong: true as const,
-        contractVersion: SHARED_CONTRACT_VERSION,
-        timestamp: Date.now(),
-      };
+      if (!request || typeof request.version !== 'string') {
+        throw new Error('Invalid ping payload');
+      }
+      const matched = request.version === SHARED_CONTRACT_VERSION;
+      if (!matched) {
+        getLogger('ipc').warn('contract drift detected', {
+          expected: SHARED_CONTRACT_VERSION,
+          received: request.version,
+        });
+      }
+      return { version: SHARED_CONTRACT_VERSION, matched };
     }
   );
 }
-
-type ReportChannel = typeof IPC_CHANNELS.reportRendererError;
 
 export function createReportRendererErrorHandler(): (
   event: Electron.IpcMainInvokeEvent,

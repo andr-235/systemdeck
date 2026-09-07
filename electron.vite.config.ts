@@ -16,6 +16,14 @@ export default defineConfig({
         '@shared': resolve('src/shared'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Sandboxed preload не поддерживает ESM (Electron docs), поэтому — CJS (.cjs). См. ADR 0007.
+          format: 'cjs',
+        },
+      },
+    },
   },
   renderer: {
     resolve: {

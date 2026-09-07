@@ -80,7 +80,7 @@ _Density: 8/10 — Dense / Dashboard_
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #d97706;
+  background: #1e40af;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;

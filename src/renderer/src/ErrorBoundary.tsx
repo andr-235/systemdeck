@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import SystemErrorScreen from './components/SystemErrorScreen';
 
 type Props = {
   children: ReactNode;
@@ -45,28 +46,12 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            fontFamily: 'sans-serif',
-            gap: 12,
-            padding: 24,
-            textAlign: 'center',
-          }}
-          role="alert"
-        >
-          <h1>Что-то пошло не так</h1>
-          <p>Произошла непредвиденная ошибка. Попробуйте перезапустить приложение.</p>
-          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-            <button type="button" onClick={this.handleReload}>
-              Перезапустить
-            </button>
-          </div>
-        </div>
+        <SystemErrorScreen
+          title="Что-то пошло не так"
+          message="Произошла непредвиденная ошибка. Попробуйте перезапустить приложение."
+          buttonLabel="Перезапустить"
+          onRetry={this.handleReload}
+        />
       );
     }
 

@@ -113,6 +113,55 @@ describe('Renderer — CpuWidget (jsdom project)', () => {
     });
   });
 
+  it('recovers from a thrown usage call: error state, no unhandled rejection, keeps polling', async () => {
+    vi.useFakeTimers();
+    const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => {
+      throw new Error('ipc transport boom');
+    });
+    setMockApi({ getUsage });
+
+    render(<CpuWidget />);
+
+    // первый тик внутри act — сетел-стейт получен, rejection пойман
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(getUsage).toHaveBeenCalledTimes(1);
+    // сырой текст ошибки в UI не утекает
+    expect(screen.getByText(/данные недоступны/)).toBeInTheDocument();
+    expect(screen.queryByText(/ipc transport boom/)).not.toBeInTheDocument();
+
+    // цикл продолжается несмотря на броски
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(getUsage).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
+  it('retries getInfo when it throws', async () => {
+    vi.useFakeTimers();
+    const getInfo = vi.fn(async (): Promise<IpcResult<CpuInfoResponse>> => {
+      throw new Error('info transport boom');
+    });
+    setMockApi({ getInfo });
+
+    render(<CpuWidget />);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(getInfo).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(getInfo).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
   it('shows null baseline (first usage tick) as unavailable, not 0', async () => {
     const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
       ok: true,
@@ -128,13 +177,17 @@ describe('Renderer — CpuWidget (jsdom project)', () => {
     expect(screen.queryByText('0%')).not.toBeInTheDocument();
   });
 
-  it('shows loading skeleton before the first usage response', () => {
+  it('shows loading skeleton before the first usage response', async () => {
     const never = vi.fn(async () => new Promise<IpcResult<CpuUsageResponse>>(() => {}));
     setMockApi({ getUsage: never });
 
     render(<CpuWidget />);
 
-    expect(screen.getByRole('status', { name: 'загрузка данных CPU' })).toBeInTheDocument();
+    // getInfo (не мокнут) резолвится — ждём его внутри act; usage остаётся вечным скелетом
+    await waitFor(() => {
+      expect(screen.getByRole('status', { name: 'загрузка данных CPU' })).toBeInTheDocument();
+    });
+
     expect(screen.queryByText('недоступно')).not.toBeInTheDocument();
   });
 
