@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import ErrorBoundary from './ErrorBoundary';
+import { setMockApi } from './test-utils';
 
 function Throwing(): React.JSX.Element {
   throw new Error('boom renderer');
@@ -14,14 +15,7 @@ describe('Renderer — ErrorBoundary (jsdom project)', () => {
 
   it('renders fallback and reports via window.api.reportRendererError', () => {
     const mockReport = vi.fn(async () => ({ ok: true as const, data: undefined }));
-    (window as unknown as { api: Window['api'] }).api = {
-      ping: vi.fn() as unknown as Window['api']['ping'],
-      reportRendererError: mockReport as unknown as Window['api']['reportRendererError'],
-      cpu: {
-        getInfo: vi.fn() as unknown as Window['api']['cpu']['getInfo'],
-        getUsage: vi.fn() as unknown as Window['api']['cpu']['getUsage'],
-      },
-    };
+    setMockApi({ reportRendererError: mockReport });
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
