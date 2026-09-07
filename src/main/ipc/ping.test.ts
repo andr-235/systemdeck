@@ -102,10 +102,13 @@ describe('Main IPC — ping handler (node project)', () => {
 
   it('reportRendererError handler returns ok:false for invalid payload without stack leak', async () => {
     const handler = createReportRendererErrorHandler();
-    const result = await handler({} as Electron.IpcMainInvokeEvent, {
-      scope: 'invalid',
-      message: 123,
-    } as unknown as { scope: 'renderer'; message: string });
+    const result = await handler(
+      {} as Electron.IpcMainInvokeEvent,
+      {
+        scope: 'invalid',
+        message: 123,
+      } as unknown as { scope: 'renderer'; message: string }
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect((result.error as Record<string, unknown>).stack).toBeUndefined();

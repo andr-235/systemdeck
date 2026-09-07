@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { AppAPI } from '@shared/api';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
+import { toErrorParts } from '@shared/ipc/errors';
 import type { IpcResult, PingResponse, ReportRendererErrorRequest } from '@shared/ipc';
 
 const api: AppAPI = {
@@ -15,8 +16,7 @@ if (process.contextIsolated) {
   } catch (error) {
     console.error(error);
     try {
-      const message = error instanceof Error ? error.message : String(error);
-      const stack = error instanceof Error ? error.stack : undefined;
+      const { message, stack } = toErrorParts(error);
       void ipcRenderer.invoke(IPC_CHANNELS.reportRendererError, {
         scope: 'preload' as const,
         message: `preload expose failed: ${message}`,

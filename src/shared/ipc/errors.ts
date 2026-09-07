@@ -33,14 +33,21 @@ export function toIpcError(error: unknown): IpcError {
   }
   if (error instanceof Error) {
     return {
-      code: IPC_ERROR_CODES.UNKNOWN,
+      code: IPC_ERROR_CODES.INTERNAL,
       message: error.message || 'Unknown error',
     };
   }
   return {
-    code: IPC_ERROR_CODES.UNKNOWN,
+    code: IPC_ERROR_CODES.INTERNAL,
     message: String(error),
   };
+}
+
+export function toErrorParts(value: unknown): { message: string; stack?: string } {
+  if (value instanceof Error) {
+    return { message: value.message, stack: value.stack ?? undefined };
+  }
+  return { message: String(value) };
 }
 
 export function ipcSuccess<T>(data: T): IpcResult<T> {

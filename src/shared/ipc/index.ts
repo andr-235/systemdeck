@@ -6,6 +6,7 @@ export {
   type IpcResult,
   isIpcError,
   toIpcError,
+  toErrorParts,
   ipcSuccess,
   ipcFailure,
 } from './errors';

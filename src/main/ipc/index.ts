@@ -2,7 +2,13 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNELS, type IpcChannel } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import type { IpcRequest, IpcResponse } from '@shared/ipc/contracts';
-import { IPC_ERROR_CODES, ipcFailure, ipcSuccess, type IpcResult } from '@shared/ipc/errors';
+import {
+  IPC_ERROR_CODES,
+  ipcFailure,
+  ipcSuccess,
+  toErrorParts,
+  type IpcResult,
+} from '@shared/ipc/errors';
 import { getLogger } from '../logger';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
@@ -38,10 +44,7 @@ export function withSafeHandler<TReq, TRes>(
       logger.debug(`ipc success: ${String(channel)}`);
       return ipcSuccess(data);
     } catch (error) {
-      logger.error(`ipc failure: ${String(channel)}`, {
-        error:
-          error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
-      });
+      logger.error(`ipc failure: ${String(channel)}`, { error: toErrorParts(error) });
       return ipcFailure(error);
     }
   };

@@ -62,4 +62,5 @@ _Avoid_: Catch boundary, Fallback UI
 
 **Log Redaction**:
 Правило Application Log заменять значения ключей `password|token|secret|key|auth|credential` на `[REDACTED]` перед записью.
+Сканируются только имена ключей: секрет внутри значения строки (например в `message` или URL) не детектится — осознанный компромисс против ложных срабатываний.
 _Avoid_: Sanitization, Masking

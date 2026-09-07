@@ -42,10 +42,6 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
-  private handleReset = (): void => {
-    this.setState({ hasError: false, error: null });
-  };
-
   render(): ReactNode {
     if (this.state.hasError) {
       return (
@@ -68,9 +64,6 @@ export class ErrorBoundary extends Component<Props, State> {
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <button type="button" onClick={this.handleReload}>
               Перезапустить
-            </button>
-            <button type="button" onClick={this.handleReset}>
-              Попробовать снова
             </button>
           </div>
         </div>

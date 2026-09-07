@@ -15,4 +15,5 @@
 - `src/shared` остаётся без `electron`/`node:*` — `IPC_ERROR_CODES.RATE_LIMITED` добавлен, `withSafeHandler` единственный маппер `throw` → `IpcResult`.
 - `src/main/logger.ts` единственный владелец `node:fs`/`app.getPath`, `src/preload` и `src/renderer` логируют только через `Application API` (`reportRendererError`).
 - `npm run test` мокает `fs`/`app.getPath` для `logger` и `jsdom` для `ErrorBoundary`; реальный файл не трогается в CI.
+- Redaction проверяет только имена ключей, не значения строк: секрет внутри `message`/URL не redact-ится — осознанный компромисс против ложных срабатываний.
 - Смена лимитов ротации/формата требует правки `logger.ts` и тестов — hard to reverse, зафиксировано здесь.

@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { registerIpcHandlers } from './ipc';
 import { initLogger, getLogger, getLogFilePath, getLogLevel } from './logger';
+import { toErrorParts } from '@shared/ipc/errors';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 
 initLogger();
@@ -11,26 +12,25 @@ const mainLogger = getLogger('main');
 
 mainLogger.info('init logger', { level: getLogLevel(), file: getLogFilePath() });
 
-process.on('uncaughtException', (error) => {
-  mainLogger.error('uncaughtException', {
-    message: error.message,
-    stack: error.stack,
-  });
-  try {
-    if (!app.isReady()) {
-      dialog.showErrorBox('SystemDeck — unexpected error', error.message);
+function setupGlobalErrorHandlers(): void {
+  process.on('uncaughtException', (error) => {
+    mainLogger.error('uncaughtException', toErrorParts(error));
+    try {
+      if (!app.isReady()) {
+        dialog.showErrorBox('SystemDeck — unexpected error', error.message);
+      }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
-  }
-  app.quit();
-});
+    app.quit();
+  });
 
-process.on('unhandledRejection', (reason) => {
-  const msg = reason instanceof Error ? reason.message : String(reason);
-  const stack = reason instanceof Error ? reason.stack : undefined;
-  mainLogger.error('unhandledRejection', { message: msg, stack });
-});
+  process.on('unhandledRejection', (reason) => {
+    mainLogger.error('unhandledRejection', toErrorParts(reason));
+  });
+}
+
+setupGlobalErrorHandlers();
 
 app.enableSandbox();
 
@@ -93,6 +93,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Повторная инициализация после app.whenReady — резолвит userData/logs когда app.getPath доступен
+  initLogger();
   electronApp.setAppUserModelId('com.systemdeck.app');
   mainLogger.info('app ready', {
     version: app.getVersion(),
