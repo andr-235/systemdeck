@@ -1,13 +1,25 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppAPI } from '@shared/api';
+import type { AppAPI, CpuApi } from '@shared/api';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
 import { toErrorParts } from '@shared/ipc/errors';
-import type { IpcResult, PingResponse, ReportRendererErrorRequest } from '@shared/ipc';
+import type {
+  CpuInfoResponse,
+  CpuUsageResponse,
+  IpcResult,
+  PingResponse,
+  ReportRendererErrorRequest,
+} from '@shared/ipc';
+
+const cpu: CpuApi = {
+  getInfo: (): Promise<IpcResult<CpuInfoResponse>> => ipcRenderer.invoke(IPC_CHANNELS.cpuInfo),
+  getUsage: (): Promise<IpcResult<CpuUsageResponse>> => ipcRenderer.invoke(IPC_CHANNELS.cpuUsage),
+};
 
 const api: AppAPI = {
   ping: (): Promise<IpcResult<PingResponse>> => ipcRenderer.invoke(IPC_CHANNELS.ping),
   reportRendererError: (request: ReportRendererErrorRequest): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IPC_CHANNELS.reportRendererError, request),
+  cpu,
 };
 
 if (process.contextIsolated) {

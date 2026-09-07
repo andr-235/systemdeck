@@ -17,6 +17,10 @@ describe('Renderer — ErrorBoundary (jsdom project)', () => {
     (window as unknown as { api: Window['api'] }).api = {
       ping: vi.fn() as unknown as Window['api']['ping'],
       reportRendererError: mockReport as unknown as Window['api']['reportRendererError'],
+      cpu: {
+        getInfo: vi.fn() as unknown as Window['api']['cpu']['getInfo'],
+        getUsage: vi.fn() as unknown as Window['api']['cpu']['getUsage'],
+      },
     };
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

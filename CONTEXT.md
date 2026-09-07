@@ -64,3 +64,30 @@ _Avoid_: Catch boundary, Fallback UI
 Правило Application Log заменять значения ключей `password|token|secret|key|auth|credential` на `[REDACTED]` перед записью.
 Сканируются только имена ключей: секрет внутри значения строки (например в `message` или URL) не детектится — осознанный компромисс против ложных срабатываний.
 _Avoid_: Sanitization, Masking
+
+## Monitoring
+
+**CPU Info**:
+Статическая, редко меняющаяся информация о процессоре: модель, тактовая частота, число логических и физических ядер. Снимается редко и кэшируется в Main.
+_Avoid_: CPU hardware info, CPU spec, CPU static
+
+**CPU Utilization**:
+Текущая загрузка процессора в процентах. Считается как дельта тиков между двумя последовательными CPU Snapshots, поэтому усредняется за время, прошедшее между запросами.
+_Известное исключение_: IPC-канал и методы Application API названы `cpu:usage`/`getUsage()` (ADR 0006) — «usage» здесь именование шины/API, а не синоним термина.
+_Avoid_: CPU load
+
+**CPU Snapshot**:
+Мгновенный замер тиков CPU (`user/nice/sys/idle/irq`) по каждому логическому ядру в момент времени. Пара последовательных снапшотов даёт CPU Utilization.
+_Avoid_: CPU sample, CPU times snapshot
+
+**Logical Core**:
+Вычислительный поток, который видит ОС (гипертрединг). Число логических ядер = `os.cpus().length`; по ним же считаются тики.
+_Avoid_: Core (без уточнения), hardware thread
+
+**Physical Core**:
+Физический вычислительный блок процессора. На Windows получается через WMI `Win32_Processor.NumberOfCores` однократно и кэшируется; при недоступности — Unavailable.
+_Avoid_: CPU core, hardware core
+
+**Unavailable**:
+Значение `null` для поля метрики, которое платформа или железо не предоставляет. Никогда не выдумывается и не считается по аналогии.
+_Avoid_: Not supported, n/a, missing (как синоним)

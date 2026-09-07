@@ -10,6 +10,9 @@ import {
   type IpcResult,
 } from '@shared/ipc/errors';
 import { getLogger } from '../logger';
+import { CpuMonitor } from '../monitoring/cpu/CpuMonitor';
+import { registerCpuIpc } from './cpu';
+import { assertNoPayload } from './validate';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
 const IPC_RATE_LIMIT_MAX = 20;
@@ -60,9 +63,7 @@ export function createPingHandler(): (
     IPC_CHANNELS.ping,
     async (request) => {
       // Validation: PingRequest must be void/undefined — reject any payload (future-proof)
-      if (request !== undefined && request !== null) {
-        throw new Error('Invalid ping payload');
-      }
+      assertNoPayload(request, 'ping');
       return {
         pong: true as const,
         contractVersion: SHARED_CONTRACT_VERSION,
@@ -98,7 +99,8 @@ export function createReportRendererErrorHandler(): (
   );
 }
 
-export function registerIpcHandlers(): void {
+export function registerIpcHandlers(cpuMonitor: CpuMonitor = new CpuMonitor()): void {
   ipcMain.handle(IPC_CHANNELS.ping, createPingHandler());
   ipcMain.handle(IPC_CHANNELS.reportRendererError, createReportRendererErrorHandler());
+  registerCpuIpc(cpuMonitor);
 }

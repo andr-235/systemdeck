@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset';
 import { registerIpcHandlers } from './ipc';
 import { initLogger, getLogger, getLogFilePath, getLogLevel } from './logger';
 import { toErrorParts } from '@shared/ipc/errors';
+import { IPC_CHANNELS } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 
 initLogger();
@@ -127,7 +128,7 @@ app.whenReady().then(() => {
   });
 
   mainLogger.debug('registering IPC handlers', {
-    channels: ['systemdeck:ping', 'systemdeck:renderer-error'],
+    channels: Object.values(IPC_CHANNELS),
   });
   registerIpcHandlers();
 

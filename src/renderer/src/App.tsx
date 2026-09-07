@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { PingResponse, IpcError } from '@shared/ipc';
 import { toIpcError } from '@shared/ipc';
+import CpuWidget from './components/CpuWidget';
 
 function App(): React.JSX.Element {
   const [ping, setPing] = useState<PingResponse | null>(null);
@@ -68,6 +69,7 @@ function App(): React.JSX.Element {
           </p>
         )}
       </div>
+      <CpuWidget />
     </div>
   );
 }

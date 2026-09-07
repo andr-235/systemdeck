@@ -24,13 +24,15 @@ describe('Main IPC — ping handler (node project)', () => {
     vi.clearAllMocks();
   });
 
-  it('registerIpcHandlers registers systemdeck:ping and renderer-error channels', () => {
+  it('registerIpcHandlers registers all IPC channels', () => {
     registerIpcHandlers();
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.ping, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(
       IPC_CHANNELS.reportRendererError,
       expect.any(Function)
     );
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.cpuInfo, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.cpuUsage, expect.any(Function));
   });
 
   it('ping handler returns ok:true with pong, contractVersion and timestamp', async () => {

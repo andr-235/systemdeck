@@ -2,10 +2,23 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import App from './App';
-import type { IpcResult, PingResponse } from '@shared/ipc';
+import type { CpuInfoResponse, CpuUsageResponse, IpcResult, PingResponse } from '@shared/ipc';
 
 function setMockApi(ping: Window['api']['ping']): void {
-  (window as unknown as { api: Window['api'] }).api = { ping } as Window['api'];
+  (window as unknown as { api: Window['api'] }).api = {
+    ping,
+    reportRendererError: vi.fn() as unknown as Window['api']['reportRendererError'],
+    cpu: {
+      getInfo: vi.fn(async (): Promise<IpcResult<CpuInfoResponse>> => ({
+        ok: true,
+        data: { model: '', clockMhz: 0, logicalCores: 1, physicalCores: null },
+      })),
+      getUsage: vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
+        ok: true,
+        data: { overall: null, perCore: [null], timestamp: 0 },
+      })),
+    },
+  } satisfies Window['api'];
 }
 
 describe('Renderer — App (jsdom project)', () => {
