@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { ProcessSnapshot } from '@shared/ipc';
 import WidgetCard from './WidgetCard';
-import { formatBytes } from '../format';
+import { formatBytes, formatPercent } from '../format';
 
 const TOP_PROCESSES = 5;
 
@@ -16,7 +16,10 @@ function ProcessWidget({ processSnapshot, stale, error }: ProcessWidgetProps): R
 
   const summary = useMemo(() => {
     if (!processes) return null;
-    return [...processes].sort((a, b) => b.cpuPercent - a.cpuPercent).slice(0, TOP_PROCESSES);
+    return [...processes]
+      .filter((p) => p.cpuPercent !== null) // Unavailable без дельты исключаем из топа
+      .sort((a, b) => (b.cpuPercent as number) - (a.cpuPercent as number))
+      .slice(0, TOP_PROCESSES);
   }, [processes]);
 
   const rows = summary ?? [];
@@ -64,10 +67,10 @@ function ProcessWidget({ processSnapshot, stale, error }: ProcessWidgetProps): R
                   {p.name}
                 </td>
                 <td className="sd-num" style={{ textAlign: 'right', padding: '2px 4px' }}>
-                  {p.cpuPercent}
+                  {formatPercent(p.cpuPercent)}
                 </td>
                 <td className="sd-num" style={{ textAlign: 'right', padding: '2px 4px' }}>
-                  {formatBytes(p.memBytes)}
+                  {formatBytes(p.workingSetBytes)}
                 </td>
               </tr>
             ))}

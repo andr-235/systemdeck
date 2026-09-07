@@ -9,7 +9,7 @@ const entry: ProcessEntry = {
   pid: 4242,
   name: 'chrome.exe',
   cpuPercent: 12.5,
-  memBytes: 1048576,
+  workingSetBytes: 1048576,
   execPath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   protected: false,
   commandLine: 'chrome.exe --type=renderer --enable-features=X',

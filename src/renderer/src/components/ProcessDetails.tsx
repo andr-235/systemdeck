@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ProcessEntry } from '@shared/ipc';
-import { formatBytes, formatDateTime } from '../format';
+import { formatBytes, formatDateTime, formatPercent } from '../format';
 import ConfirmDialog from './ConfirmDialog';
 import { cardStyle } from './WidgetCard';
 
@@ -104,8 +104,8 @@ function ProcessDetails({
         </button>
       </div>
       <DetailRow label="PID">{entry.pid}</DetailRow>
-      <DetailRow label="CPU%">{entry.cpuPercent}%</DetailRow>
-      <DetailRow label="Память">{formatBytes(entry.memBytes)}</DetailRow>
+      <DetailRow label="CPU%">{formatPercent(entry.cpuPercent)}</DetailRow>
+      <DetailRow label="Память">{formatBytes(entry.workingSetBytes)}</DetailRow>
       <DetailRow label="Исполняемый файл">{entry.execPath ?? '—'}</DetailRow>
       <DetailRow label="Командная строка">{entry.commandLine ?? '—'}</DetailRow>
       <DetailRow label="Потоков">{entry.threadCount}</DetailRow>

@@ -74,11 +74,15 @@ _Avoid_: Sanitization, Masking
 _Avoid_: Snapshot (без уточнения), Telemetry Frame, Metric Batch
 
 **Process Snapshot**:
-Отдельный медленный push-пакет (интервал ~5 с) списка процессов: `pid`, `name`, `cpuPercent`, `memBytes`, `execPath`, `protected`. Не входит в Live Snapshot из-за объёма; `execPath` может быть `null` для чужих/привилегированных процессов без прав администратора.
+Отдельный медленный push-пакет (интервал ~5 с) списка процессов: `pid`, `name`, `cpuPercent`, `workingSetBytes`, `execPath`, `protected`. Не входит в Live Snapshot из-за объёма; `execPath` может быть `null` для чужих/привилегированных процессов без прав администратора. `cpuPercent` — дельта с предыдущим сэмплом (ADR 0012); `null` (Unavailable, прочерк в UI), когда дельты нет (первый сэмпл после старта, сброс счётчиков WMI).
 _Avoid_: Process list (как контракт), Processes
 
+**Process Working Set**:
+Резидентная физическая память процесса в байтах — поле `workingSetBytes` в ProcessEntry (из WMI `WorkingSetSize`). Не виртуальная и не private память; в UI отображается как «Память».
+_Avoid_: Process memory, RAM (как синоним поля контракта)
+
 **Protected Process**:
-Процесс, помеченный в Main флагом `protected: true` (система/привилегированный процесс). Классификация — источник правды в Main; Renderer только читает флаг и блокирует «Завершить». Никогда не решается на стороне Renderer.
+Процесс, помеченный в Main флагом `protected: true`. Классификация — по имени из хардкод-списка системных процессов в Main (ADR 0011); намеренно НЕ включает владельца/сессию и процессы антивирусов — это осознанная граница первого шага. Renderer только читает флаг и блокирует «Завершить». Никогда не решается на стороне Renderer.
 _Avoid_: System process (как решение клиента), Protected (без уточнения)
 
 **Process Termination**:

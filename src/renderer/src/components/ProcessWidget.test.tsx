@@ -12,7 +12,7 @@ const snapshot: ProcessSnapshot = {
       pid: 1,
       name: 'sys',
       cpuPercent: 10.5,
-      memBytes: 4096,
+      workingSetBytes: 4096,
       execPath: 'C:\\sys.exe',
       protected: true,
       commandLine: 'sys.exe --quiet',
@@ -34,7 +34,7 @@ describe('Renderer — ProcessWidget (jsdom project)', () => {
     renderWidget(snapshot);
     expect(screen.getByText('sys')).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('10.5')).toBeInTheDocument();
+    expect(screen.getByText('10.5%')).toBeInTheDocument();
   });
 
   it('shows empty note when process snapshot is empty', () => {

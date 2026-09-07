@@ -106,7 +106,7 @@ export function makeProcessEntry(overrides: Partial<ProcessEntry> = {}): Process
     pid: 1,
     name: 'a.exe',
     cpuPercent: 0,
-    memBytes: 1024,
+    workingSetBytes: 1024,
     execPath: null,
     protected: false,
     commandLine: null,

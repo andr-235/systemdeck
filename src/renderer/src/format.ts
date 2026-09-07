@@ -6,6 +6,11 @@ export function formatBytes(value: number): string {
   return `${value} Б`;
 }
 
+/** Процент CPU; null (Unavailable — нет предыдущего сэмпла) → прочерк. */
+export function formatPercent(value: number | null): string {
+  return value === null ? '—' : `${value}%`;
+}
+
 export function formatRate(bytesPerSec: number): string {
   return `${formatBytes(bytesPerSec)}/с`;
 }

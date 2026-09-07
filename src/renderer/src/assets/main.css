@@ -379,6 +379,30 @@ body {
   outline-offset: -2px;
 }
 
+/* Группировка процессов по приложению (EPIC 3): бейдж числа процессов,
+ * каретка раскрытия и отступ строк-членов группы. */
+.sd-group-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--sd-color-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sd-group-caret {
+  display: inline-block;
+  width: 14px;
+  color: var(--sd-color-foreground-dim);
+}
+
+.sd-member-name {
+  padding-left: var(--sd-space-md);
+}
+
 /* Скринридерный визуально-скрытый текст */
 .sd-sr-only {
   position: absolute;

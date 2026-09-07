@@ -83,8 +83,11 @@ export type LiveSnapshot = {
 export type ProcessEntry = {
   pid: number;
   name: string;
-  cpuPercent: number;
-  memBytes: number;
+  /** CPU% по дельте с предыдущим сэмплом; null (Unavailable), когда дельты нет
+   *  (первый сэмпл, сброс счётчиков) — аналог первого CPU Snapshot (ADR 0012). */
+  cpuPercent: number | null;
+  /** Резидентная физическая память процесса (Working Set, Process Working Set). */
+  workingSetBytes: number;
   execPath: string | null;
   /** Защищённый/системный процесс — блокирует завершение (классификация в Main). */
   protected: boolean;
