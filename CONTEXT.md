@@ -35,3 +35,19 @@ _Avoid_: Preload API, Bridge API, Electron API (для продукта)
 **Privileged API**:
 Любой импорт `electron` / `node:*` / `fs` / `path` и доступ к `BrowserWindow`, `ipcMain` — разрешён только в Main и Preload.
 _Avoid_: Node API, Electron API (как обобщённый термин)
+
+**IPC Channel**:
+Каноническая строковая константа с префиксом `systemdeck:` из `Shared` (`IPC_CHANNELS`), единственный идентификатор вызова между Renderer и Main.
+_Avoid_: Channel name, Event name, IPC string
+
+**IPC Contract**:
+Типизированная карта в `Shared` `channel -> { request, response }` (`IpcContracts`), единственный источник правды для Preload и Main.
+_Avoid_: Channel type, IPC type, Request/Response type (как обобщённый термин)
+
+**IPC Result**:
+Дискриминированное объединение `{ ok: true; data } | { ok: false; error: IPC Error }` — единственная форма ответа IPC.
+_Avoid_: IPC response, Result wrapper, Either
+
+**IPC Error**:
+Безопасная сериализуемая ошибка `{ code, message }` без `stack`/`cause`; полный текст логируется только в Main.
+_Avoid_: Serialized error, IPC exception
