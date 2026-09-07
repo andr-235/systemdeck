@@ -11,6 +11,7 @@ vi.mock('electron', () => ({
 
 import {
   createPingHandler,
+  createReportRendererErrorHandler,
   withSafeHandler,
   __clearIpcRateMapForTests,
   registerIpcHandlers,
@@ -23,9 +24,13 @@ describe('Main IPC — ping handler (node project)', () => {
     vi.clearAllMocks();
   });
 
-  it('registerIpcHandlers registers systemdeck:ping channel', () => {
+  it('registerIpcHandlers registers systemdeck:ping and renderer-error channels', () => {
     registerIpcHandlers();
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.ping, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      IPC_CHANNELS.reportRendererError,
+      expect.any(Function)
+    );
   });
 
   it('ping handler returns ok:true with pong, contractVersion and timestamp', async () => {
@@ -70,5 +75,40 @@ describe('Main IPC — ping handler (node project)', () => {
     const succeeding = withSafeHandler('test:channel', async (req: string) => `echo:${req}`);
     const result = await succeeding({} as Electron.IpcMainInvokeEvent, 'hello');
     expect(result).toEqual({ ok: true, data: 'echo:hello' });
+  });
+
+  it('withSafeHandler returns RATE_LIMITED when exceeding threshold', async () => {
+    const handler = withSafeHandler('test:rate', async () => 'ok');
+    // Exhaust 20 allowed hits
+    for (let i = 0; i < 20; i += 1) {
+      await handler({} as Electron.IpcMainInvokeEvent, undefined);
+    }
+    const limited = await handler({} as Electron.IpcMainInvokeEvent, undefined);
+    expect(limited.ok).toBe(false);
+    if (!limited.ok) {
+      expect(limited.error.code).toBe('RATE_LIMITED');
+    }
+  });
+
+  it('reportRendererError handler logs and returns ok:true for valid payload', async () => {
+    const handler = createReportRendererErrorHandler();
+    const result = await handler({} as Electron.IpcMainInvokeEvent, {
+      scope: 'renderer',
+      message: 'boom',
+      stack: 'stack',
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('reportRendererError handler returns ok:false for invalid payload without stack leak', async () => {
+    const handler = createReportRendererErrorHandler();
+    const result = await handler({} as Electron.IpcMainInvokeEvent, {
+      scope: 'invalid',
+      message: 123,
+    } as unknown as { scope: 'renderer'; message: string });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect((result.error as Record<string, unknown>).stack).toBeUndefined();
+    }
   });
 });

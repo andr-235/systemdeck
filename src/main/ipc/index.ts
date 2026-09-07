@@ -2,7 +2,8 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNELS, type IpcChannel } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import type { IpcRequest, IpcResponse } from '@shared/ipc/contracts';
-import { ipcFailure, ipcSuccess, type IpcResult } from '@shared/ipc/errors';
+import { IPC_ERROR_CODES, ipcFailure, ipcSuccess, type IpcResult } from '@shared/ipc/errors';
+import { getLogger } from '../logger';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
 const IPC_RATE_LIMIT_MAX = 20;
@@ -27,14 +28,20 @@ export function withSafeHandler<TReq, TRes>(
   handler: (request: TReq) => Promise<TRes> | TRes
 ): (event: Electron.IpcMainInvokeEvent, request: TReq) => Promise<IpcResult<TRes>> {
   return async (_event, request) => {
+    const logger = getLogger('ipc');
     if (isRateLimited(channel)) {
-      return ipcFailure({ code: 'RATE_LIMITED', message: 'Too many requests' });
+      logger.warn(`rate limited: ${String(channel)}`);
+      return ipcFailure({ code: IPC_ERROR_CODES.RATE_LIMITED, message: 'Too many requests' });
     }
     try {
       const data = await handler(request);
+      logger.debug(`ipc success: ${String(channel)}`);
       return ipcSuccess(data);
     } catch (error) {
-      console.error(`[ipc:${channel}]`, error);
+      logger.error(`ipc failure: ${String(channel)}`, {
+        error:
+          error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+      });
       return ipcFailure(error);
     }
   };
@@ -62,6 +69,33 @@ export function createPingHandler(): (
   );
 }
 
+type ReportChannel = typeof IPC_CHANNELS.reportRendererError;
+
+export function createReportRendererErrorHandler(): (
+  event: Electron.IpcMainInvokeEvent,
+  request: IpcRequest<ReportChannel>
+) => Promise<IpcResult<IpcResponse<ReportChannel>>> {
+  return withSafeHandler<IpcRequest<ReportChannel>, IpcResponse<ReportChannel>>(
+    IPC_CHANNELS.reportRendererError,
+    async (request) => {
+      const logger = getLogger('renderer');
+      if (
+        !request ||
+        typeof request.message !== 'string' ||
+        (request.scope !== 'renderer' && request.scope !== 'preload')
+      ) {
+        throw new Error('Invalid reportRendererError payload');
+      }
+      logger.error(`renderer error [${request.scope}]: ${request.message}`, {
+        stack: request.stack,
+        componentStack: request.componentStack,
+      });
+      return undefined as IpcResponse<ReportChannel>;
+    }
+  );
+}
+
 export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.ping, createPingHandler());
+  ipcMain.handle(IPC_CHANNELS.reportRendererError, createReportRendererErrorHandler());
 }

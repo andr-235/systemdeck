@@ -51,3 +51,15 @@ _Avoid_: IPC response, Result wrapper, Either
 **IPC Error**:
 Безопасная сериализуемая ошибка `{ code, message }` без `stack`/`cause`; полный текст логируется только в Main.
 _Avoid_: Serialized error, IPC exception
+
+**Application Log**:
+Структурированный JSON-lines файл в `userData/logs/systemdeck.log`, принадлежит Main и является единственным источником диагностики.
+_Avoid_: File log, Electron log
+
+**Error Boundary**:
+Верхнеуровневая React-граница в Renderer вокруг `<App />`, ловит ошибки рендера и репортит их в Main через Application API.
+_Avoid_: Catch boundary, Fallback UI
+
+**Log Redaction**:
+Правило Application Log заменять значения ключей `password|token|secret|key|auth|credential` на `[REDACTED]` перед записью.
+_Avoid_: Sanitization, Masking

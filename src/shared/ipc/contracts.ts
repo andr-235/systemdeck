@@ -9,10 +9,21 @@ export type PingResponse = {
   timestamp: number;
 };
 
+export type ReportRendererErrorRequest = {
+  scope: 'renderer' | 'preload';
+  message: string;
+  stack?: string;
+  componentStack?: string;
+};
+
+export type ReportRendererErrorResponse = void;
+
 export type IpcContracts = {
   [K in IpcChannel]: K extends typeof IPC_CHANNELS.ping
     ? { request: PingRequest; response: PingResponse }
-    : never;
+    : K extends typeof IPC_CHANNELS.reportRendererError
+      ? { request: ReportRendererErrorRequest; response: ReportRendererErrorResponse }
+      : never;
 };
 
 // Helper to extract request/response for a channel with full type-safety

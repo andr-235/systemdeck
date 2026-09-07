@@ -1,8 +1,36 @@
-import { app, shell, BrowserWindow, session } from 'electron';
+import { app, shell, BrowserWindow, session, dialog } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { registerIpcHandlers } from './ipc';
+import { initLogger, getLogger, getLogFilePath, getLogLevel } from './logger';
+import { SHARED_CONTRACT_VERSION } from '@shared/api';
+
+initLogger();
+const mainLogger = getLogger('main');
+
+mainLogger.info('init logger', { level: getLogLevel(), file: getLogFilePath() });
+
+process.on('uncaughtException', (error) => {
+  mainLogger.error('uncaughtException', {
+    message: error.message,
+    stack: error.stack,
+  });
+  try {
+    if (!app.isReady()) {
+      dialog.showErrorBox('SystemDeck — unexpected error', error.message);
+    }
+  } catch {
+    // ignore
+  }
+  app.quit();
+});
+
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : undefined;
+  mainLogger.error('unhandledRejection', { message: msg, stack });
+});
 
 app.enableSandbox();
 
@@ -28,7 +56,12 @@ function createWindow(): void {
   });
 
   mainWindow.on('ready-to-show', () => {
+    mainLogger.info('window ready-to-show');
     mainWindow.show();
+  });
+
+  mainWindow.on('closed', () => {
+    mainLogger.info('window closed');
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -61,6 +94,14 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.systemdeck.app');
+  mainLogger.info('app ready', {
+    version: app.getVersion(),
+    contractVersion: SHARED_CONTRACT_VERSION,
+    platform: process.platform,
+    arch: process.arch,
+    logLevel: getLogLevel(),
+    logFile: getLogFilePath(),
+  });
 
   // Global permission handler for any session created before window
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
@@ -83,8 +124,12 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  mainLogger.debug('registering IPC handlers', {
+    channels: ['systemdeck:ping', 'systemdeck:renderer-error'],
+  });
   registerIpcHandlers();
 
+  mainLogger.info('creating window');
   createWindow();
 
   app.on('activate', function () {
@@ -93,7 +138,16 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  mainLogger.info('window-all-closed');
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('will-quit', () => {
+  mainLogger.info('will-quit');
+});
+
+app.on('before-quit', () => {
+  mainLogger.info('before-quit');
 });
