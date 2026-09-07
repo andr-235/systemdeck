@@ -86,12 +86,25 @@ export type ProcessEntry = {
   cpuPercent: number;
   memBytes: number;
   execPath: string | null;
+  /** Защищённый/системный процесс — блокирует завершение (классификация в Main). */
+  protected: boolean;
+  commandLine: string | null;
+  threadCount: number;
+  /** Epoch-ms запуска процесса; null, если платформа/привилегии не отдают. */
+  creationTime: number | null;
+  parentPid: number | null;
 };
 
 export type ProcessSnapshot = {
   timestamp: number;
   processes: ProcessEntry[];
 };
+
+export type ProcessTerminateRequest = {
+  pid: number;
+};
+
+export type ProcessTerminateResponse = void;
 
 // --- Static info (pull, cached in Main) ---------------------------------------
 
@@ -165,7 +178,9 @@ export type IpcContracts = {
               ? { request: LiveSubscribeRequest; response: LiveSubscribeResponse }
               : K extends typeof IPC_CHANNELS.liveUnsubscribe
                 ? { request: LiveUnsubscribeRequest; response: LiveUnsubscribeResponse }
-                : never;
+                : K extends typeof IPC_CHANNELS.processTerminate
+                  ? { request: ProcessTerminateRequest; response: ProcessTerminateResponse }
+                  : never;
 };
 
 export type IpcPushContracts = {

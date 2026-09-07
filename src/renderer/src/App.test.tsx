@@ -48,6 +48,25 @@ describe('Renderer — App (jsdom project)', () => {
     expect(screen.getAllByText('12.5%').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('navigates to the Processes page from the Shell', async () => {
+    const subscribe = vi.fn(async () => ({ ok: true as const, data: { intervalMs: 1000 } }));
+    setMockApi({ subscribe });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Процессы' }));
+    });
+
+    expect(screen.getByRole('heading', { name: 'Процессы' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Процессы' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+  });
+
   it('pause freezes displayed values until resumed', async () => {
     const subscribe = vi.fn(async () => ({ ok: true as const, data: { intervalMs: 1000 } }));
     const capturedListeners: Array<(s: LiveSnapshot) => void> = [];

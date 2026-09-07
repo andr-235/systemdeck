@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import type { ProcessSnapshot } from '@shared/ipc';
 import WidgetCard from './WidgetCard';
 import { formatBytes } from '../format';
+
+const TOP_PROCESSES = 5;
 
 type ProcessWidgetProps = {
   processSnapshot: ProcessSnapshot | null;
@@ -11,11 +14,19 @@ type ProcessWidgetProps = {
 function ProcessWidget({ processSnapshot, stale, error }: ProcessWidgetProps): React.JSX.Element {
   const processes = processSnapshot?.processes ?? null;
 
+  const summary = useMemo(() => {
+    if (!processes) return null;
+    return [...processes].sort((a, b) => b.cpuPercent - a.cpuPercent).slice(0, TOP_PROCESSES);
+  }, [processes]);
+
+  const rows = summary ?? [];
+  const empty = processes !== null && summary !== null && summary.length === 0;
+
   return (
     <WidgetCard title="Процессы" stale={stale} error={error}>
-      {!processes ? (
+      {!summary ? (
         <span role="presentation" className="skeleton-bar" style={{ width: 160, height: 8 }} />
-      ) : processes.length === 0 ? (
+      ) : empty ? (
         <span style={{ fontSize: 12 }}>Нет данных о процессах</span>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -36,7 +47,7 @@ function ProcessWidget({ processSnapshot, stale, error }: ProcessWidgetProps): R
             </tr>
           </thead>
           <tbody>
-            {processes.map((p) => (
+            {rows.map((p) => (
               <tr key={p.pid}>
                 <td className="sd-num" style={{ padding: '2px 4px' }}>
                   {p.pid}

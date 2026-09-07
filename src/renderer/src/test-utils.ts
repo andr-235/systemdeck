@@ -1,6 +1,6 @@
 import type { AppAPI } from '@shared/api';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
-import type { LiveSnapshot, ProcessSnapshot } from '@shared/ipc';
+import type { LiveSnapshot, ProcessEntry, ProcessSnapshot } from '@shared/ipc';
 
 type MockApiOverrides = Partial<{
   ping: AppAPI['ping'];
@@ -12,6 +12,7 @@ type MockApiOverrides = Partial<{
   unsubscribe: AppAPI['live']['unsubscribe'];
   onLiveSnapshot: AppAPI['onLiveSnapshot'];
   onProcessSnapshot: AppAPI['onProcessSnapshot'];
+  terminateProcess: AppAPI['terminateProcess'];
 }>;
 
 export const emptyLiveSnapshot: LiveSnapshot = {
@@ -86,6 +87,8 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
       (() => () => {
         /* noop */
       }),
+    terminateProcess:
+      overrides.terminateProcess ?? (async () => ({ ok: true as const, data: undefined })),
   };
 }
 
@@ -95,4 +98,21 @@ export function makeLiveSnapshot(overrides: Partial<LiveSnapshot> = {}): LiveSna
 
 export function makeProcessSnapshot(overrides: Partial<ProcessSnapshot> = {}): ProcessSnapshot {
   return { timestamp: 0, processes: [], ...overrides };
+}
+
+/** Общая фабрика записи процесса для тестов рендерера (избегаем дублирования имени/полей). */
+export function makeProcessEntry(overrides: Partial<ProcessEntry> = {}): ProcessEntry {
+  return {
+    pid: 1,
+    name: 'a.exe',
+    cpuPercent: 0,
+    memBytes: 1024,
+    execPath: null,
+    protected: false,
+    commandLine: null,
+    threadCount: 1,
+    creationTime: null,
+    parentPid: null,
+    ...overrides,
+  };
 }

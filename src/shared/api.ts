@@ -44,8 +44,9 @@ export interface AppAPI {
   system: SystemInfoApi;
   gpu: GpuInfoApi;
   live: LiveApi;
+  terminateProcess: (pid: number) => Promise<IpcResultFor<typeof IPC_CHANNELS.processTerminate>>;
   onLiveSnapshot: (callback: (snapshot: LiveSnapshot) => void) => Unsubscribe;
   onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void) => Unsubscribe;
 }
 
-export const SHARED_CONTRACT_VERSION = 'sd-018' as const;
+export const SHARED_CONTRACT_VERSION = 'sd-019' as const;

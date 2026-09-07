@@ -21,7 +21,8 @@ function hasApplicationApi(): boolean {
     typeof api.live?.subscribe === 'function' &&
     typeof api.live?.unsubscribe === 'function' &&
     typeof api.onLiveSnapshot === 'function' &&
-    typeof api.onProcessSnapshot === 'function'
+    typeof api.onProcessSnapshot === 'function' &&
+    typeof api.terminateProcess === 'function'
   );
 }
 

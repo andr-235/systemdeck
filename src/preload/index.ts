@@ -60,6 +60,8 @@ const api: AppAPI = {
   system,
   gpu,
   live,
+  terminateProcess: (pid: number): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.processTerminate, { pid }),
   onLiveSnapshot: (callback: (snapshot: LiveSnapshot) => void): Unsubscribe =>
     subscribePush<LiveSnapshot>(IPC_PUSH_CHANNELS.liveSnapshot, callback),
   onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void): Unsubscribe =>

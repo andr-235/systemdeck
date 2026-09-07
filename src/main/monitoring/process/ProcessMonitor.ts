@@ -1,38 +1,77 @@
 import type { ProcessSnapshot, ProcessEntry } from '@shared/ipc';
 import { nonEmpty } from '../../util/math';
 import { withFallback } from '../../util/promise';
+import { classifyProtectedProcessName } from '../../system/processProtection';
 
 export type ProcessSource = () => Promise<ProcessEntry[]>;
 
-type ProcessRow = {
+export type ProcessRow = {
   ProcessId: number | null;
   Name: string | null;
   ExecutablePath: string | null;
   WorkingSetSize: number | null;
   UserModeTime: number | null;
   KernelModeTime: number | null;
+  CommandLine: string | null;
+  ThreadCount: number | null;
+  CreationDate: string | null;
+  ParentProcessId: number | null;
 };
 
-const DEFAULT_MAX_PROCESSES = 200;
+/** 0 = без ограничения: страница «Процессы» показывает полную таблицу (T2). */
+const DEFAULT_MAX_PROCESSES = 0;
+
+/**
+ * Парсит CIM datetime (YYYYMMDDHHMMSS.mmmmmm±UUU) в epoch-ms. Возвращает null,
+ * если значение отсутствует или не распознано (никогда не выдумывает — Unavailable).
+ */
+export function parseCimDateTime(value: string | null): number | null {
+  if (!value) return null;
+  const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.\d+([+-])(\d{3})$/.exec(value);
+  if (!m) return null;
+  const [, yy, mo, dd, hh, mi, ss, sign, offH] = m;
+  const year = Number(yy);
+  const month = Number(mo);
+  const day = Number(dd);
+  const hour = Number(hh);
+  const minute = Number(mi);
+  const second = Number(ss);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const utc = Date.UTC(year, month - 1, day, hour, minute, second);
+  // CIM-хвост ±UUU — смещение в минутах от UTC (напр. -300 = UTC-5).
+  // Хранимое время локальное: UTC = local − offset.
+  const offsetMinutes = Number(offH);
+  return sign === '+' ? utc - offsetMinutes * 60_000 : utc + offsetMinutes * 60_000;
+}
+
+/** Мапит сырую WMI-строку процесса в контракт ProcessEntry (ADR 0011). */
+export function toProcessEntry(row: ProcessRow, cpuPercent: number): ProcessEntry {
+  return {
+    pid: typeof row.ProcessId === 'number' ? row.ProcessId : 0,
+    name: row.Name ?? 'unknown',
+    cpuPercent,
+    memBytes: typeof row.WorkingSetSize === 'number' ? row.WorkingSetSize : 0,
+    execPath: nonEmpty(row.ExecutablePath),
+    protected: classifyProtectedProcessName(row.Name),
+    commandLine: nonEmpty(row.CommandLine),
+    threadCount: typeof row.ThreadCount === 'number' ? row.ThreadCount : 0,
+    creationTime: parseCimDateTime(row.CreationDate),
+    parentPid: typeof row.ParentProcessId === 'number' ? row.ParentProcessId : null,
+  };
+}
 
 async function readRawProcessRows(): Promise<ProcessRow[]> {
   if (process.platform !== 'win32') return [];
   const { runPowershellJson } = await import('../../system/ps');
   const rows = await runPowershellJson<ProcessRow[]>(
-    `Get-CimInstance Win32_Process | Select-Object ProcessId,Name,ExecutablePath,WorkingSetSize,UserModeTime,KernelModeTime | ConvertTo-Json -Compress`
+    `Get-CimInstance Win32_Process | Select-Object ProcessId,Name,ExecutablePath,WorkingSetSize,UserModeTime,KernelModeTime,CommandLine,ThreadCount,CreationDate,ParentProcessId | ConvertTo-Json -Compress`
   );
   return Array.isArray(rows) ? rows : [];
 }
 
 export async function readProcesses(): Promise<ProcessEntry[]> {
   const rows = await readRawProcessRows();
-  return rows.map((row) => ({
-    pid: typeof row.ProcessId === 'number' ? row.ProcessId : 0,
-    name: row.Name ?? 'unknown',
-    cpuPercent: 0,
-    memBytes: typeof row.WorkingSetSize === 'number' ? row.WorkingSetSize : 0,
-    execPath: nonEmpty(row.ExecutablePath),
-  }));
+  return rows.map((row) => toProcessEntry(row, 0));
 }
 
 /**
@@ -66,13 +105,7 @@ export async function sampleProcesses(
     // UserModeTime+KernelModeTime в 100ns; процент доли ядра в окне:
     // cpuDelta * 100ns / elapsedMs
     const cpuPercent = (cpuDelta * 100) / (elapsedMs * 10_000);
-    entries.push({
-      pid: cur.ProcessId ?? 0,
-      name: cur.Name ?? 'unknown',
-      cpuPercent: Math.round(cpuPercent * 10) / 10,
-      memBytes: cur.WorkingSetSize ?? 0,
-      execPath: nonEmpty(cur.ExecutablePath),
-    });
+    entries.push(toProcessEntry(cur, Math.round(cpuPercent * 10) / 10));
   }
 
   // детерминированная сортировка: cpuPercent desc, затем pid asc (ADR 0009)

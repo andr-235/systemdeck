@@ -74,8 +74,16 @@ _Avoid_: Sanitization, Masking
 _Avoid_: Snapshot (без уточнения), Telemetry Frame, Metric Batch
 
 **Process Snapshot**:
-Отдельный медленный push-пакет (интервал ~5 с) списка процессов: `pid`, `name`, `cpuPercent`, `memBytes`, `execPath`. Не входит в Live Snapshot из-за объёма; `execPath` может быть `null` для чужих/привилегированных процессов без прав администратора.
+Отдельный медленный push-пакет (интервал ~5 с) списка процессов: `pid`, `name`, `cpuPercent`, `memBytes`, `execPath`, `protected`. Не входит в Live Snapshot из-за объёма; `execPath` может быть `null` для чужих/привилегированных процессов без прав администратора.
 _Avoid_: Process list (как контракт), Processes
+
+**Protected Process**:
+Процесс, помеченный в Main флагом `protected: true` (система/привилегированный процесс). Классификация — источник правды в Main; Renderer только читает флаг и блокирует «Завершить». Никогда не решается на стороне Renderer.
+_Avoid_: System process (как решение клиента), Protected (без уточнения)
+
+**Process Termination**:
+Деструктивная операция Main, выполняемая по invoke-каналу `systemdeck:process:terminate` (`Stop-Process -Force`). Renderer никогда не инициирует её напрямую: сначала явное подтверждение пользователем, затем Main выполняет и логирует в Application Log. Результат — `IpcResult`.
+_Avoid_: Kill, End process (как контракт)
 
 **System Information**:
 Статический pull-контракт `system:info`: Windows версия/build, hostname, uptime, архитектура, производитель/модель платы, установленная RAM. Собирается один раз и кэшируется на сессию в Main.

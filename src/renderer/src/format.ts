@@ -20,3 +20,10 @@ export function formatUptime(seconds: number): string {
   parts.push(`${minutes} мин`);
   return parts.join(' ');
 }
+
+export function formatDateTime(epochMs: number): string {
+  if (!Number.isFinite(epochMs)) return '—';
+  const d = new Date(epochMs);
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
