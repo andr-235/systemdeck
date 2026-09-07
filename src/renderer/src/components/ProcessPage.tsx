@@ -30,9 +30,16 @@ const SORT_KEY_LABEL: Record<ProcessSortKey, string> = {
 
 function Shield(): React.JSX.Element {
   return (
-    <span role="img" aria-label="защищённый процесс" title="Защищённый/системный процесс">
-      🛡️
-    </span>
+    <svg
+      className="sd-shield"
+      viewBox="0 0 24 24"
+      role="img"
+      aria-label="защищённый процесс"
+      focusable="false"
+    >
+      <title>Защищённый/системный процесс</title>
+      <path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.06 14.35-3.1-3.1 1.41-1.42 1.69 1.69 4.25-4.25 1.41 1.42-5.66 5.66z" />
+    </svg>
   );
 }
 
@@ -95,7 +102,7 @@ function ProcessPage({
       key={p.pid}
       tabIndex={0}
       className={selectedPid === (pid ?? p.pid) ? 'sd-row-selected' : ''}
-      aria-selected={selectedPid === (pid ?? p.pid)}
+      aria-current={selectedPid === (pid ?? p.pid) ? 'true' : undefined}
       onClick={() => onSelect({ ...p, pid: pid ?? p.pid })}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -143,7 +150,9 @@ function ProcessPage({
             <span className="sd-process-name">
               <ShieldBadge protected={g.protected} />
               <span className="sd-group-caret" aria-hidden="true">
-                {isOpen ? '▾' : '▸'}
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
               </span>
               {g.name}
             </span>

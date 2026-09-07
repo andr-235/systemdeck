@@ -6,6 +6,7 @@
   --sd-color-background: #f8fafc;
   --sd-color-surface: #ffffff;
   --sd-color-foreground: #1e3a8a;
+  --sd-color-foreground-dim: #475569;
   --sd-color-muted: #e9eef6;
   --sd-color-border: #dbeafe;
   --sd-color-destructive: #dc2626;
@@ -380,7 +381,7 @@ body {
 }
 
 /* Группировка процессов по приложению (EPIC 3): бейдж числа процессов,
- * каретка раскрытия и отступ строк-членов группы. */
+ * каретка раскрытия, отступ строк-членов группы и hover строк. */
 .sd-group-badge {
   display: inline-flex;
   align-items: center;
@@ -389,18 +390,51 @@ body {
   padding: 0 6px;
   border-radius: 10px;
   background: var(--sd-color-muted);
-  font-size: 11px;
+  color: var(--sd-color-foreground-dim);
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
 .sd-group-caret {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   width: 14px;
+  color: var(--sd-color-foreground-dim);
+  transition: transform 150ms ease;
+}
+
+.sd-group-caret svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sd-process-table tr[aria-expanded='true'] .sd-group-caret {
+  transform: rotate(90deg);
+}
+
+.sd-shield {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
   color: var(--sd-color-foreground-dim);
 }
 
 .sd-member-name {
   padding-left: var(--sd-space-md);
+}
+
+.sd-process-table tbody tr {
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.sd-process-table tbody tr:hover {
+  background: var(--sd-color-muted);
 }
 
 /* Скринридерный визуально-скрытый текст */
@@ -446,5 +480,9 @@ body {
   }
   .skeleton-bar {
     animation: none;
+  }
+  .sd-group-caret,
+  .sd-process-table tbody tr {
+    transition: none;
   }
 }
