@@ -13,6 +13,12 @@
       "skillPath": "skills/playwright/SKILL.md",
       "computedHash": "d415646751ad11909247835d20b85c7103d86b8f0f82d4c68a47d1afcfddd6e7"
     },
+    "powershell-windows-cli": {
+      "source": "UncertaintyDeterminesYou4ndMe/powershell-windows-cli-agent-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "4fe5ac25939b4367d6c00e19b80c780b297abf09e28bd1632d846e98af6ab323"
+    },
     "react": {
       "source": "PyModel/react-frontend-skills",
       "sourceType": "github",
@@ -24,6 +30,12 @@
       "sourceType": "github",
       "skillPath": "skills/typescript/SKILL.md",
       "computedHash": "984db4fa6caa704c4338876e4aa5b711fbfabc44d5ee3fc3580c1f7fd72762ba"
+    },
+    "ui-ux-pro-max": {
+      "source": "NinjaSln-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "ui-ux-pro-max/SKILL.md",
+      "computedHash": "40cf6af58774f5ab0d7ed62c317bed9421410cd295d41682ecd7beb339177d1d"
     },
     "vitest": {
       "source": "PyModel/react-frontend-skills",

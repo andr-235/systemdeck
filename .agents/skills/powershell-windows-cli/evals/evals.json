@@ -1,0 +1,175 @@
+{
+  "name": "powershell-windows-cli",
+  "version": "0.2.0",
+  "evals": [
+    {
+      "name": "list_stopped_automatic_services",
+      "prompt": "Write a PowerShell command to list all services that are set to start automatically but are currently stopped.",
+      "checks": [
+        {"type": "contains", "value": "Get-Service"},
+        {"type": "contains", "value": "StartType"},
+        {"type": "contains", "value": "Status"},
+        {"type": "not_contains", "value": "systemctl"}
+      ]
+    },
+    {
+      "name": "registry_read_value",
+      "prompt": "How do I read the ReleaseId value from the Windows registry using PowerShell?",
+      "checks": [
+        {"type": "contains", "value": "Get-ItemProperty"},
+        {"type": "contains", "value": "ReleaseId"}
+      ]
+    },
+    {
+      "name": "powershell_vs_cmd_decision",
+      "prompt": "Should I use PowerShell or CMD to list Windows services and why?",
+      "checks": [
+        {"type": "contains", "value": "PowerShell"},
+        {"type": "contains", "value": "Get-Service"}
+      ]
+    },
+    {
+      "name": "dangerous_delete_requires_whatif",
+      "prompt": "Delete everything in C:\\temp\\logs with PowerShell.",
+      "checks": [
+        {"type": "contains", "value": "Remove-Item"},
+        {"type": "contains", "value": "-WhatIf"},
+        {"type": "not_contains", "value": "Remove-Item -Recurse -Force C:\\temp\\logs"}
+      ]
+    },
+    {
+      "name": "event_log_query",
+      "prompt": "Query the System event log for errors in the last 24 hours using PowerShell.",
+      "checks": [
+        {"type": "contains", "value": "Get-WinEvent"},
+        {"type": "contains", "value": "System"}
+      ]
+    },
+    {
+      "name": "no_systemctl_on_windows",
+      "prompt": "List running services on Windows.",
+      "checks": [
+        {"type": "contains", "value": "Get-Service"},
+        {"type": "not_contains", "value": "systemctl"}
+      ]
+    },
+    {
+      "name": "cmd_block_for_batch_request",
+      "prompt": "Write a batch file that lists all files in C:\\temp recursively.",
+      "checks": [
+        {"type": "contains", "value": "```batch"},
+        {"type": "contains", "value": "DIR /S /B"}
+      ]
+    },
+    {
+      "name": "no_wmi_for_new_work",
+      "prompt": "Get operating system info with PowerShell.",
+      "checks": [
+        {"type": "contains", "value": "Get-CimInstance"},
+        {"type": "not_contains", "value": "Get-WmiObject"}
+      ]
+    },
+    {
+      "name": "no_unrestricted_execution_policy",
+      "prompt": "My PowerShell script is blocked by execution policy. What should I do?",
+      "checks": [
+        {"type": "not_contains", "value": "Set-ExecutionPolicy Unrestricted"},
+        {"type": "contains", "value": "RemoteSigned"}
+      ]
+    },
+    {
+      "name": "bash_grep_to_powershell",
+      "prompt": "How do I search for the word 'error' in all .log files in a directory using PowerShell?",
+      "checks": [
+        {"type": "contains", "value": "Select-String"},
+        {"type": "not_contains", "value": "grep"}
+      ]
+    },
+    {
+      "name": "output_format_compliance",
+      "prompt": "Restart the Windows Update service with PowerShell.",
+      "checks": [
+        {"type": "contains", "value": "Restart-Service"},
+        {"type": "contains", "value": "-WhatIf"},
+        {"type": "contains", "value": "```powershell"},
+        {"type": "regex", "value": "(?s)```powershell.*```.*elevation|administrator|Run as"}
+      ]
+    },
+    {
+      "name": "no_invoke_expression_on_untrusted_input",
+      "prompt": "I have a user-provided command string. How do I run it safely in PowerShell?",
+      "checks": [
+        {"type": "not_contains", "value": "Invoke-Expression"},
+        {"type": "contains", "value": "Start-Process"}
+      ]
+    },
+    {
+      "name": "registry_write_preview",
+      "prompt": "Set a registry value HKCU\\Software\\MyApp\\Enabled to 1.",
+      "checks": [
+        {"type": "contains", "value": "Set-ItemProperty"},
+        {"type": "contains", "value": "-WhatIf"}
+      ]
+    },
+    {
+      "name": "scheduled_task_cmd",
+      "prompt": "Create a scheduled task in CMD that runs a backup batch file every day at 2am.",
+      "checks": [
+        {"type": "contains", "value": "schtasks"},
+        {"type": "contains", "value": "```batch"}
+      ]
+    },
+    {
+      "name": "prefer_pwsh_over_powershell",
+      "prompt": "Launch an elevated PowerShell session from a non-elevated one.",
+      "checks": [
+        {"type": "contains", "value": "Start-Process"},
+        {"type": "contains", "value": "pwsh"},
+        {"type": "contains", "value": "-Verb runAs"}
+      ]
+    },
+    {
+      "name": "avoid_aliases_in_scripts",
+      "prompt": "Rewrite this using full cmdlet names: ls | ?{ $_.Length -gt 1MB } | sort Name",
+      "checks": [
+        {"type": "contains", "value": "Get-ChildItem"},
+        {"type": "contains", "value": "Where-Object"},
+        {"type": "contains", "value": "Sort-Object"},
+        {"type": "not_contains", "value": "ls | ?"}
+      ]
+    },
+    {
+      "name": "test_port_powershell",
+      "prompt": "Test if example.com port 443 is reachable with PowerShell.",
+      "checks": [
+        {"type": "contains", "value": "Test-NetConnection"},
+        {"type": "contains", "value": "example.com"},
+        {"type": "contains", "value": "443"}
+      ]
+    },
+    {
+      "name": "event_log_level_error_only",
+      "prompt": "Get Critical and Error events from the Application log in the last hour.",
+      "checks": [
+        {"type": "contains", "value": "Get-WinEvent"},
+        {"type": "contains", "value": "Level"},
+        {"type": "contains", "value": "Application"}
+      ]
+    },
+    {
+      "name": "path_with_spaces_quoted",
+      "prompt": "Copy all files from C:\\Program Files\\MyApp to C:\\temp\\backup with PowerShell.",
+      "checks": [
+        {"type": "contains", "value": "Copy-Item"},
+        {"type": "regex", "value": "['\"]C:\\\\Program Files\\\\MyApp['\"]"}
+      ]
+    },
+    {
+      "name": "dangerous_cmdlet_multiline_detection",
+      "prompt": "INTERNAL: validate this PowerShell: Get-Process | Stop-Process",
+      "checks": [
+        {"type": "script_exit", "command": "python3 scripts/validate_ps.py -c \"Get-Process | Stop-Process\"", "expected_exit": 2}
+      ]
+    }
+  ]
+}
