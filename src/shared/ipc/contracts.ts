@@ -1,4 +1,4 @@
-import { IPC_CHANNELS } from './channels'
+import { IPC_CHANNELS, type IpcChannel } from './channels'
 import type { IpcResult } from './errors'
 
 export type PingRequest = void
@@ -10,13 +10,17 @@ export type PingResponse = {
 }
 
 export type IpcContracts = {
-  [K in (typeof IPC_CHANNELS)['ping']]: {
-    request: PingRequest
-    response: PingResponse
-  }
+  [K in IpcChannel]: K extends typeof IPC_CHANNELS.ping
+    ? { request: PingRequest; response: PingResponse }
+    : never
 }
 
 // Helper to extract request/response for a channel with full type-safety
 export type IpcRequest<K extends keyof IpcContracts> = IpcContracts[K]['request']
 export type IpcResponse<K extends keyof IpcContracts> = IpcContracts[K]['response']
 export type IpcResultFor<K extends keyof IpcContracts> = IpcResult<IpcResponse<K>>
+
+// Compile-time check: every IpcChannel must be in IpcContracts
+type _AssertAllChannelsHaveContract = IpcChannel extends keyof IpcContracts ? true : false
+const _assertAllChannelsHaveContract: _AssertAllChannelsHaveContract = true
+void _assertAllChannelsHaveContract

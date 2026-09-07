@@ -25,7 +25,10 @@ export function isIpcError(value: unknown): value is IpcError {
 }
 
 export function toIpcError(error: unknown): IpcError {
-  if (isIpcError(error)) return error as IpcError
+  if (isIpcError(error)) {
+    const e = error as IpcError
+    return { code: String(e.code), message: String(e.message) }
+  }
   if (error instanceof Error) {
     return {
       code: IPC_ERROR_CODES.UNKNOWN,

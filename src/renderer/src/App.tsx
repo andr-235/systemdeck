@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PingResponse, IpcError } from '@shared/ipc'
+import { toIpcError } from '@shared/ipc'
 
 function App(): React.JSX.Element {
   const [ping, setPing] = useState<PingResponse | null>(null)
@@ -19,7 +20,7 @@ function App(): React.JSX.Element {
         }
       } catch (e) {
         if (cancelled) return
-        setError({ code: 'UNKNOWN', message: String(e) })
+        setError(toIpcError(e))
       } finally {
         if (!cancelled) setLoading(false)
       }

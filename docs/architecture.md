@@ -31,7 +31,7 @@ graph TD
 | `src/main/**` | `src/shared/**`, `electron`, `node:*`, `@electron-toolkit/*` | `src/renderer/**`, `src/preload/**` (кроме preload пути в `webPreferences`) |
 | `src/preload/**` | `src/shared/**`, `electron` (`contextBridge`) | `src/main/**`, `src/renderer/**`, `node:fs` вне необходимости |
 | `src/renderer/**` | `src/shared/**`, `react`, `vite` | `electron`, `node:*`, `src/main/**`, `src/preload/**` |
-| `src/shared/**` | только типы/const, без runtime | `electron`, `node:*`, любой слой |
+| `src/shared/**` | типы/`const`/`as const` + чистые хелперы без runtime (`toIpcError`, `ipcSuccess`/`ipcFailure`, `isIpcError`) | `electron`, `node:*`, любой слой |
 
 Enforcement на SD-002: раздельные `tsconfig` (project references), алиасы `@shared/*` + `@renderer/*`, документация + автоматическая проверка `npm run check:boundaries` (`scripts/check-boundaries.mjs` — Renderer -/-> `electron`/`node:*`/`@electron-toolkit`, Shared -/-> `electron`/`node:*`, `contextBridge` только в `src/preload`). Проверка встроена в `npm run build`. Полный линт (`no-restricted-imports`, `dependency-cruiser`, формат) вводится в SD-004.
 
@@ -59,10 +59,10 @@ webPreferences: {
 
 ## Shared-контракт
 
-- `src/shared/api.ts` — `export interface AppAPI {}` (минимальный контракт SD-002, расширяется в SD-003) + `SHARED_CONTRACT_VERSION`, `src/shared/index.ts` — barrel (`@shared` entry point).
-- Разрешено: `type`, `interface`, `const` строк-литералов, `as const` объекты.
-- Запрещено: `import 'electron'`, `import 'node:*'`, runtime зависимости. Проверка: `npm run check:boundaries` и `grep -r "from 'electron'" src/shared` — пусто.
-- Алиас `@shared/*` резолвится в `tsconfig.node.json`, `tsconfig.web.json` и `electron.vite.config.ts`.
+- `src/shared/api.ts` — `export interface AppAPI {}` (минимальный контракт SD-002, в SD-003 `AppAPI.ping` выведен из `IpcContracts` через `IpcResultFor<typeof IPC_CHANNELS.ping>`) + `SHARED_CONTRACT_VERSION`, `src/shared/index.ts` — barrel (`@shared` entry point).
+- Разрешено: `type`, `interface`, `const` строк-литералов, `as const` объекты + чистые хелперы без `electron`/`node:*` (`IpcResult`/`IpcError`, `IPC_ERROR_CODES`, `isIpcError`/`toIpcError`/`ipcSuccess`/`ipcFailure`, `IpcContracts` + `IpcRequest`/`IpcResponse`/`IpcResultFor`).
+- Запрещено: `import 'electron'`, `import 'node:*'`, runtime зависимости от Electron. Проверка: `npm run check:boundaries` и `grep -r "from 'electron'" src/shared` — пусто.
+- Алиас `@shared/*` резолвится в `tsconfig.node.json`, `tsconfig.web.json` и `electron.vite.config.ts` (main/preload/renderer).
 
 ## Проверки
 
