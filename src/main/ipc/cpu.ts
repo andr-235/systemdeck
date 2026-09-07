@@ -1,13 +1,12 @@
 import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
-import type { IpcRequest, IpcResponse } from '@shared/ipc/contracts';
+import type { IpcRequest, IpcResultFor, IpcResponse } from '@shared/ipc/contracts';
 import type { IpcResult } from '@shared/ipc/errors';
 import { withSafeHandler } from './index';
 import { assertNoPayload } from './validate';
 import type { CpuMonitor } from '../monitoring/cpu/CpuMonitor';
 
 type CpuInfoChannel = typeof IPC_CHANNELS.cpuInfo;
-type CpuUsageChannel = typeof IPC_CHANNELS.cpuUsage;
 
 export function createCpuInfoHandler(
   monitor: CpuMonitor
@@ -24,22 +23,8 @@ export function createCpuInfoHandler(
   );
 }
 
-export function createCpuUsageHandler(
-  monitor: CpuMonitor
-): (
-  event: Electron.IpcMainInvokeEvent,
-  request: IpcRequest<CpuUsageChannel>
-) => Promise<IpcResult<IpcResponse<CpuUsageChannel>>> {
-  return withSafeHandler<IpcRequest<CpuUsageChannel>, IpcResponse<CpuUsageChannel>>(
-    IPC_CHANNELS.cpuUsage,
-    async (request) => {
-      assertNoPayload(request, 'cpu:usage');
-      return monitor.getUsage();
-    }
-  );
-}
-
 export function registerCpuIpc(monitor: CpuMonitor): void {
   ipcMain.handle(IPC_CHANNELS.cpuInfo, createCpuInfoHandler(monitor));
-  ipcMain.handle(IPC_CHANNELS.cpuUsage, createCpuUsageHandler(monitor));
 }
+
+export type CpuInfoResult = IpcResultFor<typeof IPC_CHANNELS.cpuInfo>;

@@ -1,5 +1,6 @@
 import { cpus } from 'node:os';
-import type { CpuInfoResponse, CpuUsageResponse } from '@shared/ipc';
+import type { CpuInfoResponse, CpuLiveMetrics } from '@shared/ipc';
+import { roundToTenth } from '../../util/math';
 
 export type CpuTickCore = {
   user: number;
@@ -30,10 +31,6 @@ export function readCpuSnapshotFromOs(): CpuSnapshot {
       irq: c.times.irq,
     })),
   };
-}
-
-function roundToTenth(value: number): number {
-  return Math.round(value * 10) / 10;
 }
 
 function coreBusyTotal(core: CpuTickCore): number {
@@ -85,7 +82,8 @@ export class CpuMonitor {
     this.physicalCoresProvider = options.physicalCores ?? defaultPhysicalCores;
   }
 
-  getUsage(): CpuUsageResponse {
+  /** Живое значение CPU — вычисляется как дельта между тактами Main (ADR 0008). */
+  getLive(): CpuLiveMetrics {
     const current = this.tickSource();
     const previous = this.previousSnapshot;
 
@@ -94,7 +92,6 @@ export class CpuMonitor {
       return {
         overall: null,
         perCore: current.cores.map(() => null),
-        timestamp: Date.now(),
       };
     }
 
@@ -112,7 +109,7 @@ export class CpuMonitor {
       if (totalAll > 0) overall = roundToTenth((totalBusy / totalAll) * 100);
     }
 
-    return { overall, perCore, timestamp: Date.now() };
+    return { overall, perCore };
   }
 
   async getInfo(): Promise<CpuInfoResponse> {

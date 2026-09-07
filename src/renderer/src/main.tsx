@@ -16,7 +16,12 @@ function hasApplicationApi(): boolean {
     typeof api.ping === 'function' &&
     typeof api.reportRendererError === 'function' &&
     typeof api.cpu?.getInfo === 'function' &&
-    typeof api.cpu?.getUsage === 'function'
+    typeof api.system?.getInfo === 'function' &&
+    typeof api.gpu?.getInfo === 'function' &&
+    typeof api.live?.subscribe === 'function' &&
+    typeof api.live?.unsubscribe === 'function' &&
+    typeof api.onLiveSnapshot === 'function' &&
+    typeof api.onProcessSnapshot === 'function'
   );
 }
 

@@ -9,6 +9,7 @@ import { runSmokeProbe } from './smoke';
 import { toErrorParts } from '@shared/ipc/errors';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
+import { LiveScheduler } from './monitoring/live/LiveScheduler';
 
 initLogger();
 const mainLogger = getLogger('main');
@@ -38,6 +39,8 @@ setupGlobalErrorHandlers();
 app.enableSandbox();
 
 const PRELOAD_PATH = join(__dirname, '../preload/index.cjs');
+
+const liveSchedulerRef: { current: LiveScheduler | null } = { current: null };
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -72,8 +75,19 @@ function createWindow(): BrowserWindow {
     mainWindow.show();
   });
 
+  mainWindow.on('hide', () => {
+    mainLogger.debug('window hidden');
+    liveSchedulerRef.current?.setWindowVisible(false);
+  });
+
+  mainWindow.on('show', () => {
+    mainLogger.debug('window shown');
+    liveSchedulerRef.current?.setWindowVisible(true);
+  });
+
   mainWindow.on('closed', () => {
     mainLogger.info('window closed');
+    void liveSchedulerRef.current?.dispose();
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -143,10 +157,14 @@ app.whenReady().then(() => {
   mainLogger.debug('registering IPC handlers', {
     channels: Object.values(IPC_CHANNELS),
   });
-  registerIpcHandlers();
-
-  mainLogger.info('creating window');
   const mainWindow = createWindow();
+  const scheduler = new LiveScheduler({ window: mainWindow });
+  liveSchedulerRef.current = scheduler;
+  registerIpcHandlers({ scheduler });
+
+  // Температура — probe один раз при старте Main (ADR 0009): вывод о доступности
+  // принимается до первого такта, ошибки прав/ACPI уже обработаны внутри.
+  void scheduler.probeTemperatures();
 
   if (process.env['SYSTEMDECK_SMOKE'] === '1') {
     void runSmokeProbe(mainWindow).then((ok) => {

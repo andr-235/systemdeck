@@ -1,23 +1,51 @@
 /**
  * Application API — явная поверхность window.api.
- * SD-012: ping — внутренний health/contract-drift чек (без UI), см. issue #26; ping
- * несёт ожидаемую версию контракта, Main сверяет с SHARED_CONTRACT_VERSION.
  * Shared содержит только типы и строковые константы, импортируется Main/Preload/Renderer.
+ * Живые метрики приходят push-ом (onLiveSnapshot/onProcessSnapshot, ADR 0008);
+ * статическая информация и протокол подписки — request/response invoke.
  */
-import type { IpcResultFor, PingRequest, ReportRendererErrorRequest } from './ipc/contracts';
+import type {
+  IpcResultFor,
+  LiveSnapshot,
+  LiveSubscribeRequest,
+  PingRequest,
+  ProcessSnapshot,
+  ReportRendererErrorRequest,
+} from './ipc/contracts';
 import { IPC_CHANNELS } from './ipc/channels';
 
-export interface CpuApi {
+export interface CpuInfoApi {
   getInfo: () => Promise<IpcResultFor<typeof IPC_CHANNELS.cpuInfo>>;
-  getUsage: () => Promise<IpcResultFor<typeof IPC_CHANNELS.cpuUsage>>;
 }
+
+export interface SystemInfoApi {
+  getInfo: () => Promise<IpcResultFor<typeof IPC_CHANNELS.systemInfo>>;
+}
+
+export interface GpuInfoApi {
+  getInfo: () => Promise<IpcResultFor<typeof IPC_CHANNELS.gpuInfo>>;
+}
+
+export interface LiveApi {
+  subscribe: (
+    request: LiveSubscribeRequest
+  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.liveSubscribe>>;
+  unsubscribe: () => Promise<IpcResultFor<typeof IPC_CHANNELS.liveUnsubscribe>>;
+}
+
+export type Unsubscribe = () => void;
 
 export interface AppAPI {
   ping: (request: PingRequest) => Promise<IpcResultFor<typeof IPC_CHANNELS.ping>>;
   reportRendererError: (
     request: ReportRendererErrorRequest
   ) => Promise<IpcResultFor<typeof IPC_CHANNELS.reportRendererError>>;
-  cpu: CpuApi;
+  cpu: CpuInfoApi;
+  system: SystemInfoApi;
+  gpu: GpuInfoApi;
+  live: LiveApi;
+  onLiveSnapshot: (callback: (snapshot: LiveSnapshot) => void) => Unsubscribe;
+  onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void) => Unsubscribe;
 }
 
-export const SHARED_CONTRACT_VERSION = 'sd-012' as const;
+export const SHARED_CONTRACT_VERSION = 'sd-018' as const;

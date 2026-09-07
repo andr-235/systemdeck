@@ -32,12 +32,11 @@ describe('CpuMonitor — CPU load computation (node project)', () => {
       .mockReturnValueOnce(makeSnapshot([makeCore(200, 0, 100, 1700, 0)]));
 
     const monitor = makeMonitor();
-    const first = monitor.getUsage();
-    const second = monitor.getUsage();
+    const first = monitor.getLive();
+    const second = monitor.getLive();
 
     expect(first.overall).toBeNull();
     expect(first.perCore).toEqual([null]);
-    expect(typeof first.timestamp).toBe('number');
 
     // delta: busy +100, +50; idle +850 → ((150)/(1000))*100 = 15
     expect(second.overall).toBe(15);
@@ -54,8 +53,8 @@ describe('CpuMonitor — CPU load computation (node project)', () => {
       );
 
     const monitor = makeMonitor();
-    monitor.getUsage();
-    const usage = monitor.getUsage();
+    monitor.getLive();
+    const usage = monitor.getLive();
 
     expect(usage.overall).toBe(25);
     expect(usage.perCore).toEqual([50, 0]);
@@ -68,16 +67,16 @@ describe('CpuMonitor — CPU load computation (node project)', () => {
       .mockReturnValueOnce(makeSnapshot([makeCore(0, 0, 1, 102, 0)]));
 
     const monitor = makeMonitor();
-    monitor.getUsage();
-    expect(monitor.getUsage().overall).toBe(33.3);
+    monitor.getLive();
+    expect(monitor.getLive().overall).toBe(33.3);
   });
 
   it('returns null when no ticks elapsed between calls instead of guessing 0', () => {
     tickSource.mockReturnValue(makeSnapshot([makeCore(0, 0, 0, 100, 0)]));
 
     const monitor = makeMonitor();
-    monitor.getUsage();
-    const usage = monitor.getUsage();
+    monitor.getLive();
+    const usage = monitor.getLive();
 
     expect(usage.overall).toBeNull();
     expect(usage.perCore).toEqual([null]);
@@ -130,8 +129,8 @@ describe('CpuMonitor — CPU load computation (node project)', () => {
       .mockReturnValueOnce(makeSnapshot([makeCore(0, 0, 100, 200, 0), makeCore(50, 0, 0, 50, 0)]));
 
     const monitor = makeMonitor();
-    monitor.getUsage();
-    const usage = monitor.getUsage();
+    monitor.getLive();
+    const usage = monitor.getLive();
 
     expect(usage.perCore).toEqual([50, null]);
     expect(usage.overall).toBe(50);
@@ -143,8 +142,8 @@ describe('CpuMonitor — CPU load computation (node project)', () => {
       .mockReturnValueOnce(makeSnapshot([makeCore(100, 0, 60, 900, 0)]));
 
     const monitor = makeMonitor();
-    monitor.getUsage();
-    const usage = monitor.getUsage();
+    monitor.getLive();
+    const usage = monitor.getLive();
 
     expect(usage.overall).toBeNull();
     expect(usage.perCore).toEqual([null]);

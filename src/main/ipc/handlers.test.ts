@@ -32,7 +32,15 @@ describe('Main IPC — handlers (node project)', () => {
       expect.any(Function)
     );
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.cpuInfo, expect.any(Function));
-    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.cpuUsage, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.systemInfo, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.gpuInfo, expect.any(Function));
+  });
+
+  it('registerIpcHandlers registers live channels when scheduler provided', () => {
+    const scheduler = {} as import('../monitoring/live/LiveScheduler').LiveScheduler;
+    registerIpcHandlers({ scheduler });
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.liveSubscribe, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.liveUnsubscribe, expect.any(Function));
   });
 
   it('ping handler echoes version and matches current contract version', async () => {

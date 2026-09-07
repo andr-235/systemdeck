@@ -11,7 +11,13 @@ import {
 } from '@shared/ipc/errors';
 import { getLogger } from '../logger';
 import { CpuMonitor } from '../monitoring/cpu/CpuMonitor';
+import { SystemInfoMonitor } from '../monitoring/system/SystemInfoMonitor';
+import { GpuMonitor } from '../monitoring/gpu/GpuMonitor';
+import { LiveScheduler } from '../monitoring/live/LiveScheduler';
 import { registerCpuIpc } from './cpu';
+import { registerSystemInfoIpc } from './system';
+import { registerGpuIpc } from './gpu';
+import { registerLiveIpc } from './live';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
 const IPC_RATE_LIMIT_MAX = 20;
@@ -101,8 +107,23 @@ export function createReportRendererErrorHandler(): (
   );
 }
 
-export function registerIpcHandlers(cpuMonitor: CpuMonitor = new CpuMonitor()): void {
+export type IpcHandlersOptions = {
+  cpuMonitor?: CpuMonitor;
+  systemInfoMonitor?: SystemInfoMonitor;
+  gpuMonitor?: GpuMonitor;
+  scheduler?: LiveScheduler | null;
+};
+
+export function registerIpcHandlers(options: IpcHandlersOptions = {}): void {
+  const cpuMonitor = options.cpuMonitor ?? new CpuMonitor();
+  const systemInfoMonitor = options.systemInfoMonitor ?? new SystemInfoMonitor();
+  const gpuMonitor = options.gpuMonitor ?? new GpuMonitor();
   ipcMain.handle(IPC_CHANNELS.ping, createPingHandler());
   ipcMain.handle(IPC_CHANNELS.reportRendererError, createReportRendererErrorHandler());
   registerCpuIpc(cpuMonitor);
+  registerSystemInfoIpc(systemInfoMonitor);
+  registerGpuIpc(gpuMonitor);
+  if (options.scheduler) {
+    registerLiveIpc(options.scheduler);
+  }
 }

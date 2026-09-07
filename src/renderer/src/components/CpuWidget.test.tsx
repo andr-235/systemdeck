@@ -1,197 +1,62 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import CpuWidget from './CpuWidget';
-import { setMockApi } from '../test-utils';
-import type { CpuInfoResponse, CpuUsageResponse, IpcResult } from '@shared/ipc';
+import type { CpuLiveMetrics } from '@shared/ipc';
 
-const infoOk: CpuInfoResponse = {
-  model: 'Intel Core i7-13700',
-  clockMhz: 5100,
-  logicalCores: 16,
-  physicalCores: 8,
-};
-
-const usageOk: CpuUsageResponse = {
+const usageOk: CpuLiveMetrics = {
   overall: 42.5,
   perCore: [50, 35],
-  timestamp: 1000,
 };
 
-describe('Renderer — CpuWidget (jsdom project)', () => {
-  beforeEach(() => {
-    setMockApi({});
-  });
+function renderWidget(
+  cpu: CpuLiveMetrics | null | undefined,
+  stale = false,
+  error: string | null = null
+): void {
+  render(<CpuWidget cpu={cpu ?? null} stale={stale} error={error} />);
+}
 
+describe('Renderer — CpuWidget (jsdom project)', () => {
   afterEach(() => {
     cleanup();
-    vi.restoreAllMocks();
   });
 
-  it('renders static CPU info from getInfo', async () => {
-    const getInfo = vi.fn(async (): Promise<IpcResult<CpuInfoResponse>> => ({
-      ok: true,
-      data: infoOk,
-    }));
-    setMockApi({ getInfo });
+  it('renders live overall utilization and per-core bars', () => {
+    renderWidget(usageOk);
 
-    render(<CpuWidget />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Intel Core i7-13700/)).toBeInTheDocument();
-    });
-    expect(screen.getByText(/16 логических ядер/)).toBeInTheDocument();
-    expect(screen.getByText(/8 физических/)).toBeInTheDocument();
-    expect(screen.getByText(/5100 МГц/)).toBeInTheDocument();
-  });
-
-  it('shows unavailable mark when physical cores null, not guessed', async () => {
-    const getInfo = vi.fn(async (): Promise<IpcResult<CpuInfoResponse>> => ({
-      ok: true,
-      data: { ...infoOk, physicalCores: null },
-    }));
-    setMockApi({ getInfo });
-
-    render(<CpuWidget />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/физические ядра: недоступно/)).toBeInTheDocument();
-    });
-  });
-
-  it('renders live overall utilization and per-core bars', async () => {
-    const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
-      ok: true,
-      data: usageOk,
-    }));
-    setMockApi({ getUsage });
-
-    render(<CpuWidget />);
-
-    await waitFor(() => {
-      expect(screen.getByText('42.5%')).toBeInTheDocument();
-    });
+    expect(screen.getByText('42.5%')).toBeInTheDocument();
     expect(screen.getByText('50%')).toBeInTheDocument();
     expect(screen.getByText('35%')).toBeInTheDocument();
   });
 
-  it('repolls usage on interval (second tick updates value)', async () => {
-    vi.useFakeTimers();
-    const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
-      ok: true,
-      data: usageOk,
-    }));
-    setMockApi({ getUsage });
+  it('shows loading skeleton before first snapshot arrives', () => {
+    renderWidget(undefined);
 
-    render(<CpuWidget />);
-
-    // flush initial promise chain started inside useEffect
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    expect(getUsage).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-    expect(getUsage).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
-  });
-
-  it('renders error state when cpu:usage returns ok:false', async () => {
-    const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
-      ok: false,
-      error: { code: 'INTERNAL', message: 'cpu boom' },
-    }));
-    setMockApi({ getUsage });
-
-    render(<CpuWidget />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/cpu boom/)).toBeInTheDocument();
-    });
-  });
-
-  it('recovers from a thrown usage call: error state, no unhandled rejection, keeps polling', async () => {
-    vi.useFakeTimers();
-    const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => {
-      throw new Error('ipc transport boom');
-    });
-    setMockApi({ getUsage });
-
-    render(<CpuWidget />);
-
-    // первый тик внутри act — сетел-стейт получен, rejection пойман
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    expect(getUsage).toHaveBeenCalledTimes(1);
-    // сырой текст ошибки в UI не утекает
-    expect(screen.getByText(/данные недоступны/)).toBeInTheDocument();
-    expect(screen.queryByText(/ipc transport boom/)).not.toBeInTheDocument();
-
-    // цикл продолжается несмотря на броски
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-    expect(getUsage).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
-  });
-
-  it('retries getInfo when it throws', async () => {
-    vi.useFakeTimers();
-    const getInfo = vi.fn(async (): Promise<IpcResult<CpuInfoResponse>> => {
-      throw new Error('info transport boom');
-    });
-    setMockApi({ getInfo });
-
-    render(<CpuWidget />);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    expect(getInfo).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
-    });
-    expect(getInfo).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
-  });
-
-  it('shows null baseline (first usage tick) as unavailable, not 0', async () => {
-    const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
-      ok: true,
-      data: { overall: null, perCore: [null, null], timestamp: 1000 },
-    }));
-    setMockApi({ getUsage });
-
-    render(<CpuWidget />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('status')).toHaveTextContent('недоступно');
-    });
-    expect(screen.queryByText('0%')).not.toBeInTheDocument();
-  });
-
-  it('shows loading skeleton before the first usage response', async () => {
-    const never = vi.fn(async () => new Promise<IpcResult<CpuUsageResponse>>(() => {}));
-    setMockApi({ getUsage: never });
-
-    render(<CpuWidget />);
-
-    // getInfo (не мокнут) резолвится — ждём его внутри act; usage остаётся вечным скелетом
-    await waitFor(() => {
-      expect(screen.getByRole('status', { name: 'загрузка данных CPU' })).toBeInTheDocument();
-    });
-
+    expect(screen.getByRole('status', { name: 'загрузка данных CPU' })).toBeInTheDocument();
     expect(screen.queryByText('недоступно')).not.toBeInTheDocument();
   });
 
-  it('colors overall bar by status thresholds (warn >=70, crit >=90), value stays visible as text', async () => {
+  it('shows null overall as unavailable, not 0%', () => {
+    renderWidget({ overall: null, perCore: [null, null] });
+
+    expect(screen.getByRole('status')).toHaveTextContent('недоступно');
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+  });
+
+  it('renders stale marker when snapshot timestamp is old', () => {
+    renderWidget(usageOk, true);
+
+    expect(screen.getByText(/данные устарели/)).toBeInTheDocument();
+  });
+
+  it('renders error state when subscription failed', () => {
+    renderWidget(usageOk, false, 'live boom');
+
+    expect(screen.getByText(/live boom/)).toBeInTheDocument();
+  });
+
+  it('colors overall bar by status thresholds (warn >=70, crit >=90), value stays visible as text', () => {
     const cases: Array<{ overall: number; color: string }> = [
       { overall: 30, color: 'var(--sd-color-success)' },
       { overall: 75, color: 'var(--sd-color-accent)' },
@@ -200,21 +65,27 @@ describe('Renderer — CpuWidget (jsdom project)', () => {
 
     for (const { overall, color } of cases) {
       cleanup();
-      const getUsage = vi.fn(async (): Promise<IpcResult<CpuUsageResponse>> => ({
-        ok: true,
-        data: { overall, perCore: [overall], timestamp: 1000 },
-      }));
-      setMockApi({ getUsage });
+      renderWidget({ overall, perCore: [overall] });
 
-      render(<CpuWidget />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('cpu-overall-fill')).toHaveStyle({
-          background: color,
-          width: `${overall}%`,
-        });
+      expect(screen.getByTestId('cpu-overall-fill')).toHaveStyle({
+        background: color,
+        width: `${overall}%`,
       });
       expect(screen.getByRole('status')).toHaveTextContent(`${overall}%`);
+    }
+  });
+
+  it('pairs a text status label with the bar (state is never color-only)', () => {
+    const cases: Array<{ overall: number; label: string }> = [
+      { overall: 30, label: 'норма' },
+      { overall: 75, label: 'высокая' },
+      { overall: 95, label: 'критично' },
+    ];
+
+    for (const { overall, label } of cases) {
+      cleanup();
+      renderWidget({ overall, perCore: [overall] });
+      expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 });
