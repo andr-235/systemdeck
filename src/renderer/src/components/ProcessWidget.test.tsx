@@ -6,7 +6,20 @@ import type { ProcessSnapshot } from '@shared/ipc';
 
 const snapshot: ProcessSnapshot = {
   timestamp: 0,
-  processes: [{ pid: 1, name: 'sys', cpuPercent: 10.5, memBytes: 4096, execPath: 'C:\\sys.exe' }],
+  processes: [
+    {
+      pid: 1,
+      name: 'sys',
+      cpuPercent: 10.5,
+      memBytes: 4096,
+      execPath: 'C:\\sys.exe',
+      protected: true,
+      commandLine: 'sys.exe --quiet',
+      threadCount: 3,
+      creationTime: Date.UTC(2025, 0, 1),
+      parentPid: null,
+    },
+  ],
 };
 
 function renderWidget(processSnapshot: ProcessSnapshot | null): void {

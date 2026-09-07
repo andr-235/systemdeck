@@ -12,6 +12,7 @@ type MockApiOverrides = Partial<{
   unsubscribe: AppAPI['live']['unsubscribe'];
   onLiveSnapshot: AppAPI['onLiveSnapshot'];
   onProcessSnapshot: AppAPI['onProcessSnapshot'];
+  terminateProcess: AppAPI['terminateProcess'];
 }>;
 
 export const emptyLiveSnapshot: LiveSnapshot = {
@@ -86,6 +87,8 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
       (() => () => {
         /* noop */
       }),
+    terminateProcess:
+      overrides.terminateProcess ?? (async () => ({ ok: true as const, data: undefined })),
   };
 }
 

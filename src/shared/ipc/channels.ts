@@ -6,6 +6,7 @@ export const IPC_CHANNELS = {
   gpuInfo: 'systemdeck:gpu:info',
   liveSubscribe: 'systemdeck:live:subscribe',
   liveUnsubscribe: 'systemdeck:live:unsubscribe',
+  processTerminate: 'systemdeck:process:terminate',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

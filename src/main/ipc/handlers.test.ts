@@ -34,6 +34,10 @@ describe('Main IPC — handlers (node project)', () => {
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.cpuInfo, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.systemInfo, expect.any(Function));
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.gpuInfo, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      IPC_CHANNELS.processTerminate,
+      expect.any(Function)
+    );
   });
 
   it('registerIpcHandlers registers live channels when scheduler provided', () => {

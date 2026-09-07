@@ -18,6 +18,7 @@ import { registerCpuIpc } from './cpu';
 import { registerSystemInfoIpc } from './system';
 import { registerGpuIpc } from './gpu';
 import { registerLiveIpc } from './live';
+import { registerProcessIpc } from './process';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
 const IPC_RATE_LIMIT_MAX = 20;
@@ -123,6 +124,7 @@ export function registerIpcHandlers(options: IpcHandlersOptions = {}): void {
   registerCpuIpc(cpuMonitor);
   registerSystemInfoIpc(systemInfoMonitor);
   registerGpuIpc(gpuMonitor);
+  registerProcessIpc();
   if (options.scheduler) {
     registerLiveIpc(options.scheduler);
   }

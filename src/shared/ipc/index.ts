@@ -27,6 +27,8 @@ export {
   type LiveSnapshot,
   type ProcessEntry,
   type ProcessSnapshot,
+  type ProcessTerminateRequest,
+  type ProcessTerminateResponse,
   type SystemInfoRequest,
   type SystemInfoResponse,
   type GpuInfoRequest,
