@@ -25,6 +25,24 @@
       "skillPath": "skills/create-specification/SKILL.md",
       "computedHash": "0de8583934fbcb7afa0aa4c2569c75d74cad1a711664bb57b6aa5e0fcf6d92ae"
     },
+    "electron-best-practices": {
+      "source": "jwynia/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tech/development/tooling/electron-best-practices/SKILL.md",
+      "computedHash": "744549070132b3bc0602fd7121d42278ba74694b9d0943358093bde3543cbe97"
+    },
+    "electron-builder": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/curated/electron-builder/SKILL.md",
+      "computedHash": "ecc23906ac23271fd9b20020b4d29bb6d5440abfa9d474787ae79c595ef18caa"
+    },
+    "electron-development": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "electron-development/SKILL.md",
+      "computedHash": "70fd62ad484e35884485ae043d22f3ea7ff3e1365c536569c1994a4c211ba931"
+    },
     "feature-arch": {
       "source": "PyModel/react-frontend-skills",
       "sourceType": "github",
