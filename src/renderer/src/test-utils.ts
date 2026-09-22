@@ -13,6 +13,10 @@ type MockApiOverrides = Partial<{
   onLiveSnapshot: AppAPI['onLiveSnapshot'];
   onProcessSnapshot: AppAPI['onProcessSnapshot'];
   terminateProcess: AppAPI['terminateProcess'];
+  startScan: AppAPI['storage']['startScan'];
+  getScanResult: AppAPI['storage']['getScanResult'];
+  cancelScan: AppAPI['storage']['cancelScan'];
+  onScanProgress: AppAPI['storage']['onScanProgress'];
 }>;
 
 export const emptyLiveSnapshot: LiveSnapshot = {
@@ -89,6 +93,19 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
       }),
     terminateProcess:
       overrides.terminateProcess ?? (async () => ({ ok: true as const, data: undefined })),
+    storage: {
+      startScan:
+        overrides.startScan ?? (async () => ({ ok: true as const, data: undefined })),
+      getScanResult:
+        overrides.getScanResult ?? (async () => ({ ok: true as const, data: null })),
+      cancelScan:
+        overrides.cancelScan ?? (async () => ({ ok: true as const, data: undefined })),
+      onScanProgress:
+        overrides.onScanProgress ??
+        (() => () => {
+          /* noop */
+        }),
+    },
   };
 }
 

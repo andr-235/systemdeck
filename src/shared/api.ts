@@ -11,6 +11,8 @@ import type {
   PingRequest,
   ProcessSnapshot,
   ReportRendererErrorRequest,
+  ScanProgressEvent,
+  StorageScanStartRequest,
 } from './ipc/contracts';
 import { IPC_CHANNELS } from './ipc/channels';
 
@@ -47,6 +49,18 @@ export interface AppAPI {
   terminateProcess: (pid: number) => Promise<IpcResultFor<typeof IPC_CHANNELS.processTerminate>>;
   onLiveSnapshot: (callback: (snapshot: LiveSnapshot) => void) => Unsubscribe;
   onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void) => Unsubscribe;
+  storage: StorageApi;
 }
 
-export const SHARED_CONTRACT_VERSION = 'sd-019' as const;
+export interface StorageApi {
+  startScan: (
+    request: StorageScanStartRequest
+  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanStart>>;
+  getScanResult: (
+    volumeId: string
+  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanGet>>;
+  cancelScan: () => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanCancel>>;
+  onScanProgress: (callback: (event: ScanProgressEvent) => void) => Unsubscribe;
+}
+
+export const SHARED_CONTRACT_VERSION = 'sd-020' as const;

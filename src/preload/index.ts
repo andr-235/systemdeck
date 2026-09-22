@@ -4,6 +4,7 @@ import type {
   CpuInfoApi,
   GpuInfoApi,
   LiveApi,
+  StorageApi,
   SystemInfoApi,
   Unsubscribe,
 } from '@shared/api';
@@ -19,6 +20,9 @@ import type {
   PingRequest,
   ProcessSnapshot,
   ReportRendererErrorRequest,
+  ScanProgressEvent,
+  ScanResult,
+  StorageScanStartRequest,
   SystemInfoResponse,
 } from '@shared/ipc';
 
@@ -51,6 +55,16 @@ function subscribePush<T>(channel: string, callback: (payload: T) => void): Unsu
   };
 }
 
+const storage: StorageApi = {
+  startScan: (request: StorageScanStartRequest): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.storageScanStart, request),
+  getScanResult: (volumeId: string): Promise<IpcResult<ScanResult | null>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.storageScanGet, { volumeId }),
+  cancelScan: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IPC_CHANNELS.storageScanCancel),
+  onScanProgress: (callback: (event: ScanProgressEvent) => void): Unsubscribe =>
+    subscribePush<ScanProgressEvent>(IPC_PUSH_CHANNELS.storageScanProgress, callback),
+};
+
 const api: AppAPI = {
   ping: (request: PingRequest): Promise<IpcResult<{ version: string; matched: boolean }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.ping, request),
@@ -66,6 +80,7 @@ const api: AppAPI = {
     subscribePush<LiveSnapshot>(IPC_PUSH_CHANNELS.liveSnapshot, callback),
   onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void): Unsubscribe =>
     subscribePush<ProcessSnapshot>(IPC_PUSH_CHANNELS.processSnapshot, callback),
+  storage,
 };
 
 if (process.contextIsolated) {

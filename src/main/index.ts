@@ -7,9 +7,10 @@ import { registerIpcHandlers } from './ipc';
 import { initLogger, getLogger, getLogFilePath, getLogLevel } from './logger';
 import { runSmokeProbe } from './smoke';
 import { toErrorParts } from '@shared/ipc/errors';
-import { IPC_CHANNELS } from '@shared/ipc/channels';
+import { IPC_CHANNELS, IPC_PUSH_CHANNELS } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import { LiveScheduler } from './monitoring/live/LiveScheduler';
+import { ScanManager } from './storage/ScanManager';
 
 initLogger();
 const mainLogger = getLogger('main');
@@ -160,7 +161,14 @@ app.whenReady().then(() => {
   const mainWindow = createWindow();
   const scheduler = new LiveScheduler({ window: mainWindow });
   liveSchedulerRef.current = scheduler;
-  registerIpcHandlers({ scheduler });
+  const scanManager = new ScanManager({
+    send: (event) => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(IPC_PUSH_CHANNELS.storageScanProgress, event);
+      }
+    },
+  });
+  registerIpcHandlers({ scheduler, scanManager });
 
   // Температура — probe один раз при старте Main (ADR 0009): вывод о доступности
   // принимается до первого такта, ошибки прав/ACPI уже обработаны внутри.
