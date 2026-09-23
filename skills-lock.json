@@ -55,6 +55,12 @@
       "skillPath": "skills/git-commit/SKILL.md",
       "computedHash": "554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f"
     },
+    "n8n:create-issue": {
+      "source": "n8n-io/n8n",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/create-issue/SKILL.md",
+      "computedHash": "06d14fac3e399f7d82f47ac755dce5859ba6d02f43a7ab58f0a7ce631d6e0d57"
+    },
     "playwright": {
       "source": "PyModel/react-frontend-skills",
       "sourceType": "github",
@@ -78,6 +84,24 @@
       "sourceType": "github",
       "skillPath": "skills/security-review/SKILL.md",
       "computedHash": "002392d88637b89e4cbc409a0531834970937f3b57c0b448a17e04b5ca6d356c"
+    },
+    "triage": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/triage/SKILL.md",
+      "computedHash": "363ca4f1b97ca5227d41d3973178ab301d7c498ba41b466dfe30b6163f6d72b5"
+    },
+    "triage-issue": {
+      "source": "tomzx/agents",
+      "sourceType": "github",
+      "skillPath": "skills/triage-issue/SKILL.md",
+      "computedHash": "0fbbebaf86c3083703f262e630c5ad75020ca5a40911eb5432426767a25eb862"
+    },
+    "triage-issues": {
+      "source": "tomzx/agents",
+      "sourceType": "github",
+      "skillPath": "skills/triage-issues/SKILL.md",
+      "computedHash": "32bda500b39054c939552fdcf74fcd33814a4f2a6f037db8bdb9a92bd6a698eb"
     },
     "typescript": {
       "source": "PyModel/react-frontend-skills",
