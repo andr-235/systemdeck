@@ -457,6 +457,109 @@ body {
     height 250ms ease;
 }
 
+/* Страница «Хранилище» (EPIC 4, плотный layout под окно 900×670) */
+.sd-storage-page {
+  flex: 1;
+  overflow: auto;
+  padding: var(--sd-space-2xl);
+}
+
+.sd-storage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-lg);
+  flex-wrap: wrap;
+}
+
+.sd-storage-label {
+  display: inline-flex;
+}
+
+.sd-storage-select {
+  min-height: 44px;
+  min-width: 200px;
+  padding: var(--sd-space-md) var(--sd-space-lg);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 8px;
+  background: var(--sd-color-background);
+  color: var(--sd-color-foreground);
+  font-family: var(--sd-font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sd-storage-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sd-storage-select:focus-visible {
+  outline: 2px solid var(--sd-color-ring);
+  outline-offset: 2px;
+}
+
+.sd-storage-scan {
+  margin-top: 0;
+  min-height: 44px;
+}
+
+.sd-storage-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-sm);
+}
+
+.sd-progress-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--sd-color-muted);
+  overflow: hidden;
+}
+
+.sd-progress-fill {
+  height: 100%;
+  width: 30%;
+  border-radius: 4px;
+  background: var(--sd-color-primary);
+}
+
+.sd-progress-fill-indeterminate {
+  animation: storage-progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes storage-progress-slide {
+  0% {
+    margin-left: -30%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+.sd-storage-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--sd-space-2xl);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .sd-storage-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sd-storage-treemap,
+.sd-storage-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-md);
+  padding: var(--sd-space-xl);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 12px;
+  background: var(--sd-color-surface);
+}
+
 .skeleton-bar {
   display: inline-block;
   border-radius: 4px;
@@ -484,5 +587,8 @@ body {
   .sd-group-caret,
   .sd-process-table tbody tr {
     transition: none;
+  }
+  .sd-progress-fill-indeterminate {
+    animation: none;
   }
 }

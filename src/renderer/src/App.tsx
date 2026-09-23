@@ -10,9 +10,10 @@ import SystemInfoWidget from './components/SystemInfoWidget';
 import ProcessWidget from './components/ProcessWidget';
 import ProcessPage from './components/ProcessPage';
 import ProcessDetails from './components/ProcessDetails';
+import StoragePage from './components/StoragePage';
 import { findProcessById } from './processTable';
 
-type Page = 'dashboard' | 'processes';
+type Page = 'dashboard' | 'processes' | 'storage';
 
 function App(): React.JSX.Element {
   const [page, setPage] = useState<Page>('dashboard');
@@ -56,6 +57,14 @@ function App(): React.JSX.Element {
           >
             Процессы
           </button>
+          <button
+            type="button"
+            className="sd-nav-button"
+            aria-current={page === 'storage' ? 'page' : undefined}
+            onClick={() => navigate('storage')}
+          >
+            Хранилище
+          </button>
         </nav>
         <span className="sd-sampling">Опрос: 1 с{paused ? ' · пауза' : ''}</span>
         <button
@@ -82,6 +91,10 @@ function App(): React.JSX.Element {
             stale={stale}
             onClear={() => setSelectedPid(null)}
           />
+        </main>
+      ) : page === 'storage' ? (
+        <main className="sd-storage-page">
+          <StoragePage disks={snapshot?.disks ?? null} />
         </main>
       ) : (
         <main className="sd-dashboard">
