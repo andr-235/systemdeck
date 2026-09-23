@@ -464,6 +464,109 @@ body {
   padding: var(--sd-space-2xl);
 }
 
+.sd-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-lg);
+  padding: var(--sd-space-xl);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 12px;
+  background: var(--sd-color-surface);
+  box-shadow: var(--sd-shadow-sm);
+}
+
+.sd-storage-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-lg);
+  flex-wrap: wrap;
+}
+
+.sd-status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--sd-color-border);
+  background: var(--sd-color-muted);
+  color: var(--sd-color-foreground);
+}
+
+.sd-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sd-space-lg);
+  margin: 0;
+  padding: 0;
+}
+
+.sd-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-xs);
+  padding: var(--sd-space-lg) var(--sd-space-xl);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 10px;
+  background: var(--sd-color-background);
+}
+
+.sd-stat-label {
+  font-size: 12px;
+  color: var(--sd-color-foreground-dim);
+}
+
+.sd-stat-value {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--sd-color-foreground);
+}
+
+.sd-stat-sub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--sd-color-foreground-dim);
+}
+
+.sd-hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.sd-tablist {
+  display: flex;
+  gap: var(--sd-space-sm);
+  border-bottom: 1px solid var(--sd-color-border);
+}
+
+.sd-tab {
+  min-height: 44px;
+  padding: var(--sd-space-md) var(--sd-space-lg);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--sd-color-foreground-dim);
+  font-family: var(--sd-font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sd-tab:hover {
+  color: var(--sd-color-foreground);
+}
+
+.sd-tab[aria-selected='true'] {
+  border-bottom-color: var(--sd-color-primary);
+  color: var(--sd-color-foreground);
+  font-weight: 600;
+}
+
+.sd-tab:focus-visible {
+  outline: 2px solid var(--sd-color-ring);
+  outline-offset: -2px;
+}
+
 .sd-storage-toolbar {
   display: flex;
   align-items: center;
@@ -648,8 +751,10 @@ body {
 
 .sd-treemap-svg {
   width: 100%;
+  max-width: 640px;
   height: auto;
   display: block;
+  margin-inline: auto;
   border-radius: 8px;
 }
 

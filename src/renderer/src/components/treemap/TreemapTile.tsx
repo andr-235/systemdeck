@@ -1,20 +1,33 @@
 import type { TreemapNode } from '../../treemap';
 import { formatBytes } from '../../format';
-import { tileFill, tileStroke, treemapHue } from './treemapColor';
+import { tileColors } from './treemapColor';
+
+const MIN_LABEL_WIDTH = 44;
+const MIN_LABEL_HEIGHT = 22;
+const MIN_SIZE_WIDTH = 60;
+const MIN_SIZE_HEIGHT = 40;
+const TILE_RADIUS = 3;
+const LOCKED_STROKE_WIDTH = 2;
+const LOCKED_DASH = '5 3';
+const MAX_LABEL_CHARS = 18;
+const TEXT_OFFSET_X = 4;
+const LABEL_OFFSET_Y = 16;
+const SIZE_OFFSET_Y = 32;
 
 type TreemapTileProps = {
   tile: TreemapNode;
+  totalBytes: number;
   clickable: boolean;
   onDrill: (path: string) => void;
 };
 
-function TreemapTile({ tile, clickable, onDrill }: TreemapTileProps): React.JSX.Element {
+function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps): React.JSX.Element {
   const { leaf } = tile;
   const isFiles = !leaf.dir;
-  const hue = treemapHue(leaf.path);
-  const label = leaf.inaccessible ? `${leaf.label} 🔒` : leaf.label;
-  const showLabel = tile.width > 44 && tile.height > 22;
-  const showSize = tile.width > 60 && tile.height > 40;
+  const share = totalBytes > 0 ? leaf.sizeBytes / totalBytes : 0;
+  const colors = tileColors(leaf.path, share, leaf.inaccessible, isFiles);
+  const showLabel = tile.width > MIN_LABEL_WIDTH && tile.height > MIN_LABEL_HEIGHT;
+  const showSize = tile.width > MIN_SIZE_WIDTH && tile.height > MIN_SIZE_HEIGHT;
   const content = (
     <>
       <title>{`${leaf.label} — ${formatBytes(leaf.sizeBytes)}`}</title>
@@ -23,19 +36,19 @@ function TreemapTile({ tile, clickable, onDrill }: TreemapTileProps): React.JSX.
         y={tile.y}
         width={tile.width}
         height={tile.height}
-        fill={tileFill(hue, leaf.inaccessible, isFiles)}
-        stroke={tileStroke(hue, leaf.inaccessible, isFiles)}
-        strokeWidth={leaf.inaccessible ? 2 : 1}
-        strokeDasharray={leaf.inaccessible ? '5 3' : undefined}
-        rx={2}
+        fill={colors.fill}
+        stroke={colors.stroke}
+        strokeWidth={leaf.inaccessible ? LOCKED_STROKE_WIDTH : 1}
+        strokeDasharray={leaf.inaccessible ? LOCKED_DASH : undefined}
+        rx={TILE_RADIUS}
       />
       {showLabel && (
-        <text x={tile.x + 4} y={tile.y + 16} fontSize={12} fill="var(--sd-color-foreground)" pointerEvents="none">
-          {label.length > 18 ? `${label.slice(0, 17)}…` : label}
+        <text x={tile.x + TEXT_OFFSET_X} y={tile.y + LABEL_OFFSET_Y} fontSize={12} fill="var(--sd-color-foreground)" pointerEvents="none">
+          {leaf.label.length > MAX_LABEL_CHARS ? `${leaf.label.slice(0, MAX_LABEL_CHARS - 1)}…` : leaf.label}
         </text>
       )}
       {showSize && (
-        <text x={tile.x + 4} y={tile.y + 32} fontSize={11} fill="var(--sd-color-foreground-dim)" pointerEvents="none">
+        <text x={tile.x + TEXT_OFFSET_X} y={tile.y + SIZE_OFFSET_Y} fontSize={11} fill="var(--sd-color-foreground-dim)" pointerEvents="none">
           {formatBytes(leaf.sizeBytes)}
         </text>
       )}

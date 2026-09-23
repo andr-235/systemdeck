@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import StorageSidebar from './StorageSidebar';
 import type { ScanResult } from '@shared/ipc';
@@ -28,12 +28,29 @@ function makeResult(overrides: Partial<ScanResult> = {}): ScanResult {
 }
 
 describe('Renderer — StorageSidebar', () => {
-  it('компонует таблицу и сводку из ScanResult', () => {
+  it('по умолчанию открыт таб файлов, типы — по клику', () => {
     render(<StorageSidebar result={makeResult()} />);
     expect(screen.getByRole('heading', { name: 'Крупнейшие файлы и типы' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Крупнейшие файлы' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Сводка по типам файлов' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Сводка по типам файлов' })).not.toBeInTheDocument();
     expect(screen.getByText('C:\\a.iso')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'По типам' }));
+    expect(screen.getByRole('region', { name: 'Сводка по типам файлов' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Крупнейшие файлы' })).not.toBeInTheDocument();
+  });
+
+  it('стрелки, Home и End переключают табы с клавиатуры', () => {
+    render(<StorageSidebar result={makeResult()} />);
+    const filesTab = screen.getByRole('tab', { name: 'Файлы' });
+    filesTab.focus();
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'По типам' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: 'Файлы' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'End' });
+    expect(screen.getByRole('tab', { name: 'По типам' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'Home' });
+    expect(screen.getByRole('tab', { name: 'Файлы' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('помечает неполноту при недоступных каталогах', () => {
@@ -43,7 +60,7 @@ describe('Renderer — StorageSidebar', () => {
     expect(note).toHaveTextContent('недоступно каталогов: 2');
   });
 
-  it('пустой результат с недоступностью — без ложного «пусто»', () => {
+  it('пустой результат с недоступностью — без ложного «пусто» на обоих табах', () => {
     render(
       <StorageSidebar
         result={makeResult({
@@ -54,8 +71,8 @@ describe('Renderer — StorageSidebar', () => {
         })}
       />
     );
-    const statuses = screen.getAllByRole('status');
-    expect(statuses).toHaveLength(2);
-    for (const status of statuses) expect(status).toHaveTextContent('это не «пусто»');
+    expect(screen.getByRole('status')).toHaveTextContent('это не «пусто»');
+    fireEvent.click(screen.getByRole('tab', { name: 'По типам' }));
+    expect(screen.getByRole('status')).toHaveTextContent('это не «пусто»');
   });
 });

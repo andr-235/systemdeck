@@ -57,6 +57,7 @@ describe('Renderer — StorageTreemap (jsdom project)', () => {
     expect(svg).toBeInTheDocument();
     expect(svg.querySelector('title')?.textContent).toMatch(/—/);
     expect(screen.getByText(/C: ·/)).toBeInTheDocument();
+    expect(svg.textContent).not.toMatch(/🔒/);
   });
 
   it('клик по квадрату делает drill-down, breadcrumb возвращает назад', () => {
