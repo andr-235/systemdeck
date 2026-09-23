@@ -151,3 +151,47 @@ _Avoid_: Temp, CPU temp (как единственный термин)
 **Stale**:
 Состояние виджета, когда live-данных ещё были, но `timestamp` последнего Live Snapshot старше порога (`3 × intervalMs`) — поток прервался. Отличается от Unavailable (нет данных от ОС) и от error (подписка не поднялась).
 _Avoid_: Outdated, Frozen, Offline
+
+## Storage
+
+**Scan**:
+Одноразовая read-only операция обхода фиксированного тома (Disk Volume), выполняемая в Main по `storage:scan:start`. Один активный Scan за раз (повторный start — `SCAN_ALREADY_ACTIVE`); отменяется по `storage:scan:cancel`. Ничего не изменяет — только читает атрибуты.
+_Avoid_: Analyze, Disk scan, Rescan (режим операции — это повторный Scan)
+
+**Scan Result**:
+Агрегированный результат завершившегося Scan: дерево Directory Node, Largest Files и сводка по File Type Category. Lean — не содержит per-file дерева; хранится в Main на сессию на том (кэш), доставляется терминальным push-событием прогресса и читается через `storage:scan:get`. Не путать с Snapshot: Live/Process Snapshot — периодические push-пакеты, Scan Result — итог долгой операции.
+_Avoid_: Snapshot (для результата скана), Storage snapshot, Scan data
+
+**Directory Node**:
+Узел агрегированного дерева каталогов в Scan Result: имя, размер (сумма по содержимому и потомкам), счётчик файлов, флаг Inaccessible Directory. Файлы узлами не представляются — только каталоги.
+_Avoid_: Folder (в контракте), Directory entry, Tree node
+
+**File Type Category**:
+Категория файла по расширению (Documents, Images, Video, Audio, Archives, Installers, Code, System, Other). Присваивается в Main по хардкод-таблице расширений (как список Protected Process); Renderer классификацию не выполняет и получает готовые строки.
+_Avoid_: File type (как синоним категории), Extension group
+
+**Largest Files**:
+Список 100 самых больших файлов тома из последнего Scan Result (путь, размер, категория), собираемый top-100 heap'ом в Main на одном проходе. Константа v1, без UI-настройки.
+_Avoid_: Top files, Biggest files, Largest file list
+
+**Reparse Point**:
+Junction или symlink в файловой системе. Сканер никогда по нему не обходит: ссылка учитывается без обхода цели, размер цели не считается — политика против циклов и непредсказуемого времени скана.
+_Avoid_: Symlink, Junction (как отдельные термины политики)
+
+**Inaccessible Directory**:
+Свойство Directory Node: доступ к каталогу запрещён, содержимое не собрано. Скан не аборится — узел помечается, учитывается в счётчике недоступных папок, визуализация не трактует его как «пусто».
+_Avoid_: Access denied (как свойство результата), Skipped directory
+
+## Agent Skills
+
+**Agent**:
+Автономный исполнитель, работающий по `ready-for-agent` через `gh` (issue → PR). Владеет только триажем/имплементацией в границах `Main`/`Preload`/`Renderer`/`Shared`.
+_Avoid_: Bot, Copilot (как синоним роли)
+
+**Skill**:
+Версионируемый пакет инструкций (`SKILL.md` + запись в `skills-lock.json`), устанавливаемый через `npx skills add`. Не рантайм.
+_Avoid_: Plugin, Extension
+
+**Instruction**:
+Постоянный системный промпт (`AGENTS.md` / `.github/copilot-instructions.md`), задающий инварианты проекта.
+_Avoid_: Prompt, System message

@@ -19,6 +19,8 @@ import { registerSystemInfoIpc } from './system';
 import { registerGpuIpc } from './gpu';
 import { registerLiveIpc } from './live';
 import { registerProcessIpc } from './process';
+import { registerStorageIpc } from './storage';
+import type { ScanManager } from '../storage/ScanManager';
 
 const IPC_RATE_LIMIT_WINDOW_MS = 1000;
 const IPC_RATE_LIMIT_MAX = 20;
@@ -113,6 +115,7 @@ export type IpcHandlersOptions = {
   systemInfoMonitor?: SystemInfoMonitor;
   gpuMonitor?: GpuMonitor;
   scheduler?: LiveScheduler | null;
+  scanManager?: ScanManager | null;
 };
 
 export function registerIpcHandlers(options: IpcHandlersOptions = {}): void {
@@ -127,5 +130,8 @@ export function registerIpcHandlers(options: IpcHandlersOptions = {}): void {
   registerProcessIpc();
   if (options.scheduler) {
     registerLiveIpc(options.scheduler);
+  }
+  if (options.scanManager) {
+    registerStorageIpc(options.scanManager);
   }
 }

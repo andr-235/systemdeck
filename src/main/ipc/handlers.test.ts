@@ -47,6 +47,20 @@ describe('Main IPC — handlers (node project)', () => {
     expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.liveUnsubscribe, expect.any(Function));
   });
 
+  it('registerIpcHandlers registers storage channels when scanManager provided', () => {
+    const scanManager = {} as import('../storage/ScanManager').ScanManager;
+    registerIpcHandlers({ scanManager });
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      IPC_CHANNELS.storageScanStart,
+      expect.any(Function)
+    );
+    expect(ipcMain.handle).toHaveBeenCalledWith(IPC_CHANNELS.storageScanGet, expect.any(Function));
+    expect(ipcMain.handle).toHaveBeenCalledWith(
+      IPC_CHANNELS.storageScanCancel,
+      expect.any(Function)
+    );
+  });
+
   it('ping handler echoes version and matches current contract version', async () => {
     const handler = createPingHandler();
     const result = await handler({} as Electron.IpcMainInvokeEvent, {

@@ -1,11 +1,59 @@
 {
   "version": 1,
   "skills": {
+    "conventional-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/conventional-commit/SKILL.md",
+      "computedHash": "250235f71b8c501a7744ded911281292324bcd1a2d014e34b25041e2d2c8bf73"
+    },
+    "create-architectural-decision-record": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/create-architectural-decision-record/SKILL.md",
+      "computedHash": "c11af0c34fa034e36e622ad97f1194824c3cbbe675a8b17cdc0bedc91b188a72"
+    },
+    "create-implementation-plan": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/create-implementation-plan/SKILL.md",
+      "computedHash": "11caba1048cbdbfca6f7ce13a0e0580d6e9d943f7b775ee24978ece1d3334066"
+    },
+    "create-specification": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/create-specification/SKILL.md",
+      "computedHash": "0de8583934fbcb7afa0aa4c2569c75d74cad1a711664bb57b6aa5e0fcf6d92ae"
+    },
+    "electron-best-practices": {
+      "source": "jwynia/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tech/development/tooling/electron-best-practices/SKILL.md",
+      "computedHash": "744549070132b3bc0602fd7121d42278ba74694b9d0943358093bde3543cbe97"
+    },
+    "electron-builder": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/curated/electron-builder/SKILL.md",
+      "computedHash": "ecc23906ac23271fd9b20020b4d29bb6d5440abfa9d474787ae79c595ef18caa"
+    },
+    "electron-development": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "electron-development/SKILL.md",
+      "computedHash": "70fd62ad484e35884485ae043d22f3ea7ff3e1365c536569c1994a4c211ba931"
+    },
     "feature-arch": {
       "source": "PyModel/react-frontend-skills",
       "sourceType": "github",
       "skillPath": "skills/feature-arch/SKILL.md",
       "computedHash": "ca93de79f858668668220544ffd8b0f31b1741a9113432b30652f05c4307ea7e"
+    },
+    "git-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/git-commit/SKILL.md",
+      "computedHash": "554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f"
     },
     "playwright": {
       "source": "PyModel/react-frontend-skills",
@@ -24,6 +72,12 @@
       "sourceType": "github",
       "skillPath": "skills/react/SKILL.md",
       "computedHash": "d535abdf95b4b332a1cd252ac7f8f54ec12e63c229c65d76f1fdd92e93d5fc13"
+    },
+    "security-review": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/security-review/SKILL.md",
+      "computedHash": "002392d88637b89e4cbc409a0531834970937f3b57c0b448a17e04b5ca6d356c"
     },
     "typescript": {
       "source": "PyModel/react-frontend-skills",

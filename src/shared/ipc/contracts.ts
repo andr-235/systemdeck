@@ -164,6 +164,87 @@ export type LiveUnsubscribeRequest = void;
 
 export type LiveUnsubscribeResponse = void;
 
+// --- Storage scan (ADR 0013) --------------------------------------------------
+
+export type FileTypeCategory =
+  | 'Documents'
+  | 'Images'
+  | 'Video'
+  | 'Audio'
+  | 'Archives'
+  | 'Installers'
+  | 'Code'
+  | 'System'
+  | 'Other';
+
+export type LargestFileEntry = {
+  path: string;
+  name: string;
+  sizeBytes: number;
+  category: FileTypeCategory;
+};
+
+export type FileTypeTotal = {
+  category: FileTypeCategory;
+  sizeBytes: number;
+  fileCount: number;
+};
+
+/** Узел дерева каталогов тома. sizeBytes — суммарный размер поддерева
+ *  (принадлежащие файлу байты + байты дочерних каталогов). */
+export type DirectoryNode = {
+  name: string;
+  path: string;
+  sizeBytes: number;
+  /** Байты файлов, принадлежащих непосредственно этому каталогу. */
+  filesBytes: number;
+  fileCount: number;
+  /** Каталог недоступен для чтения (Access Denied) — поддерево не обходилось. */
+  inaccessible: boolean;
+  children: DirectoryNode[];
+};
+
+export type ScanResult = {
+  volumeId: string;
+  timestamp: number;
+  durationMs: number;
+  totalBytes: number;
+  fileCount: number;
+  inaccessibleDirectories: number;
+  tree: DirectoryNode;
+  largestFiles: LargestFileEntry[];
+  typeTotals: FileTypeTotal[];
+};
+
+export type StorageScanStartRequest = {
+  volumeId: string;
+};
+
+export type StorageScanStartResponse = void;
+
+export type StorageScanGetRequest = {
+  volumeId: string;
+};
+
+export type StorageScanGetResponse = ScanResult | null;
+
+export type StorageScanCancelRequest = void;
+
+export type StorageScanCancelResponse = void;
+
+export type ScanProgressEvent =
+  | {
+      status: 'scanning';
+      volumeId: string;
+      scannedEntries: number;
+      scannedBytes: number;
+      inaccessibleDirectories: number;
+      currentPath: string;
+    }
+  | { status: 'complete'; volumeId: string; result: ScanResult }
+  | { status: 'cancelled'; volumeId: string }
+  | { status: 'failed'; volumeId: string; message: string };
+
 // --- Contract maps -------------------------------------------------------------
 
 export type IpcContracts = {
@@ -183,7 +264,19 @@ export type IpcContracts = {
                 ? { request: LiveUnsubscribeRequest; response: LiveUnsubscribeResponse }
                 : K extends typeof IPC_CHANNELS.processTerminate
                   ? { request: ProcessTerminateRequest; response: ProcessTerminateResponse }
-                  : never;
+                  : K extends typeof IPC_CHANNELS.storageScanStart
+                    ? {
+                        request: StorageScanStartRequest;
+                        response: StorageScanStartResponse;
+                      }
+                    : K extends typeof IPC_CHANNELS.storageScanGet
+                      ? { request: StorageScanGetRequest; response: StorageScanGetResponse }
+                      : K extends typeof IPC_CHANNELS.storageScanCancel
+                        ? {
+                            request: StorageScanCancelRequest;
+                            response: StorageScanCancelResponse;
+                          }
+                        : never;
 };
 
 export type IpcPushContracts = {
@@ -191,7 +284,9 @@ export type IpcPushContracts = {
     ? LiveSnapshot
     : K extends typeof IPC_PUSH_CHANNELS.processSnapshot
       ? ProcessSnapshot
-      : never;
+      : K extends typeof IPC_PUSH_CHANNELS.storageScanProgress
+        ? ScanProgressEvent
+        : never;
 };
 
 // Helper to extract request/response for a channel with full type-safety
