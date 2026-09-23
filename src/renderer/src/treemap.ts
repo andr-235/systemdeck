@@ -8,6 +8,8 @@ export type TreemapLeaf = {
   path: string;
   sizeBytes: number;
   dir: boolean;
+  /** Дочерний каталог недоступен для чтения — узел не трактуется как «пусто». */
+  inaccessible: boolean;
 };
 
 export type TreemapRect = {
@@ -33,16 +35,18 @@ export function buildDirLeaves(
       path: node.path,
       sizeBytes: node.filesBytes,
       dir: false,
+      inaccessible: false,
     });
   }
   for (const child of node.children) {
-    if (child.sizeBytes <= 0) continue;
+    if (child.sizeBytes <= 0 && !child.inaccessible) continue;
     leaves.push({
       id: child.path,
       label: child.name,
       path: child.path,
       sizeBytes: child.sizeBytes,
       dir: true,
+      inaccessible: child.inaccessible === true,
     });
   }
   const sorted = leaves.sort((a, b) => b.sizeBytes - a.sizeBytes);
@@ -124,10 +128,14 @@ export function layoutTreemap(
   maxLeaves: number = MAX_TREEMAP_LEAVES
 ): TreemapNode[] {
   const leaves = buildDirLeaves(node, maxLeaves);
-  const rects = squarifyRects(
-    leaves.map((leaf) => leaf.sizeBytes),
-    width,
-    height
+  // Недоступные узлы с нулевым размером получают минимальный вес, чтобы
+  // оставаться видимыми маркерами, а не трактоваться как «пусто».
+  const weights = leaves.map((leaf) =>
+    leaf.sizeBytes > 0 ? leaf.sizeBytes : leaf.inaccessible ? 1 : 0
   );
+  const rects = squarifyRects(weights, width, height);
   return rects.map((rect, i) => ({ ...rect, leaf: leaves[i] as TreemapLeaf }));
 }
+
+/** Защита глубины drill-down — дерево скана конечно, но стек breadcrumb ограничен. */
+export const MAX_TREEMAP_DEPTH = 32;

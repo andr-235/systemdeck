@@ -60,6 +60,22 @@ describe('Renderer — treemap buildDirLeaves', () => {
     expect(leaves).toHaveLength(MAX_TREEMAP_LEAVES);
     expect(leaves.some((l) => l.sizeBytes === 0)).toBe(false);
   });
+
+  it('keeps inaccessible zero-sized children as non-empty markers', () => {
+    const node = makeNode({
+      children: [
+        makeNode({ name: 'locked', path: 'C:\\locked', sizeBytes: 0, inaccessible: true }),
+      ],
+    });
+    const leaves = buildDirLeaves(node);
+    expect(leaves).toHaveLength(1);
+    expect(leaves[0]).toMatchObject({ label: 'locked', dir: true, inaccessible: true });
+  });
+
+  it('marks the synthetic files leaf as accessible', () => {
+    const leaves = buildDirLeaves(makeNode({ filesBytes: 10 }));
+    expect(leaves[0]).toMatchObject({ dir: false, inaccessible: false });
+  });
 });
 
 describe('Renderer — treemap squarifyRects', () => {

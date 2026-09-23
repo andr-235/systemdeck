@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { DiskVolumeMetrics } from '@shared/ipc';
 import { useStorageScan } from '../useStorageScan';
 import { formatBytes, formatDateTime } from '../format';
+import StorageTreemap from './StorageTreemap';
 
 type StoragePageProps = {
   disks: DiskVolumeMetrics[] | null;
@@ -144,15 +145,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: ScanViewProps): Re
           data-testid="storage-treemap"
         >
           {state.status === 'complete' ? (
-            <>
-              <p style={{ margin: 0, fontSize: 12 }} className="sd-num">
-                Корень: {state.result.tree.name} · Каталогов: {state.result.tree.children.length}
-                {state.result.tree.inaccessible ? ' · Корень недоступен' : ''}
-              </p>
-              <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
-                Treemap с drill-down появится здесь (issue #39).
-              </p>
-            </>
+            <StorageTreemap tree={state.result.tree} />
           ) : (
             <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
               {scanning

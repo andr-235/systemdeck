@@ -592,3 +592,72 @@ body {
     animation: none;
   }
 }
+
+/* Treemap Storage (issue #39): SVG с drill-down и breadcrumb */
+.sd-treemap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-md);
+  min-width: 0;
+}
+
+.sd-treemap-breadcrumb {
+  overflow-x: auto;
+}
+
+.sd-treemap-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sd-space-xs);
+  padding: 0;
+  margin: 0;
+}
+
+.sd-treemap-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sd-space-xs);
+  font-size: 12px;
+}
+
+.sd-treemap-separator {
+  opacity: 0.5;
+}
+
+.sd-treemap-crumb-button {
+  border: 1px solid var(--sd-color-border);
+  border-radius: 8px;
+  background: var(--sd-color-background);
+  color: var(--sd-color-foreground);
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.sd-treemap-crumb-button:focus-visible {
+  outline: 2px solid var(--sd-color-ring);
+  outline-offset: 2px;
+}
+
+.sd-treemap-crumb-current {
+  font-weight: 600;
+  padding: 2px 4px;
+}
+
+.sd-treemap-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.sd-treemap-tile-clickable {
+  cursor: pointer;
+}
+
+.sd-treemap-tile-clickable:focus-visible {
+  outline: 2px solid var(--sd-color-ring);
+  outline-offset: -2px;
+}
