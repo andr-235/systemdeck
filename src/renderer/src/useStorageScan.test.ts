@@ -184,4 +184,45 @@ describe('Renderer — useStorageScan (jsdom project)', () => {
     );
     await waitFor(() => expect(result.current.state).toMatchObject({ status: 'complete' }));
   });
+
+  it('transitions idle to scanning on a scanning push (scan started elsewhere)', async () => {
+    const capture = captureApi();
+    const { result } = renderHook(() => useStorageScan('C:'));
+    await waitFor(() => expect(result.current.state.status).toBe('idle'));
+
+    await act(async () => {
+      capture.push({
+        status: 'scanning',
+        volumeId: 'C:',
+        scannedEntries: 1,
+        scannedBytes: 10,
+        inaccessibleDirectories: 0,
+        currentPath: 'C:\\',
+      });
+    });
+
+    expect(result.current.state.status).toBe('scanning');
+    if (result.current.state.status === 'scanning') {
+      expect(result.current.state.progress?.scannedEntries).toBe(1);
+    }
+  });
+
+  it('returns to scanning when a new scan starts after complete', async () => {
+    const capture = captureApi(async () => ({ ok: true as const, data: makeResult() }));
+    const { result } = renderHook(() => useStorageScan('C:'));
+    await waitFor(() => expect(result.current.state.status).toBe('complete'));
+
+    await act(async () => {
+      capture.push({
+        status: 'scanning',
+        volumeId: 'C:',
+        scannedEntries: 2,
+        scannedBytes: 20,
+        inaccessibleDirectories: 0,
+        currentPath: 'C:\\a',
+      });
+    });
+
+    expect(result.current.state.status).toBe('scanning');
+  });
 });

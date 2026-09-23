@@ -35,10 +35,10 @@ export function useStorageScan(volumeId: string): {
       setState((prev) => {
         switch (event.status) {
           case 'scanning':
-            if (prev.status === 'scanning' || prev.status === 'complete') {
+            if (prev.status === 'scanning') {
               return { ...prev, progress: event };
             }
-            return prev;
+            return { status: 'scanning', volumeId, progress: event };
           case 'complete':
             return { status: 'complete', volumeId, result: event.result, progress: null };
           case 'cancelled':

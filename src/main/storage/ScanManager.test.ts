@@ -135,4 +135,29 @@ describe('ScanManager', () => {
       expect.objectContaining({ code: IPC_ERROR_CODES.SCAN_NOT_ACTIVE })
     );
   });
+
+  it('throttles rapid scanning events but always emits the terminal complete', async () => {
+    const branchingFs: ScanFs = {
+      readdir: async (path) => {
+        if (path === 'X:\\') {
+          return [fileEntry('root.bin'), dirEntry('a'), dirEntry('b')];
+        }
+        return [fileEntry('f.bin')];
+      },
+      stat: async () => ({ size: 10, isFile: () => true }),
+    };
+    const { manager: free, events: freeEvents } = createManager(branchingFs, 0);
+    await free.startScan('X:');
+    const freeScanning = freeEvents.filter((e) => e.status === 'scanning').length;
+    expect(freeScanning).toBeGreaterThan(1);
+
+    const { manager: throttled, events: throttledEvents } = createManager(
+      branchingFs,
+      ScanManager.DEFAULT_THROTTLE_MS
+    );
+    await throttled.startScan('X:');
+    const throttledScanning = throttledEvents.filter((e) => e.status === 'scanning').length;
+    expect(throttledScanning).toBe(1);
+    expect(throttledEvents.map((e) => e.status)).toContain('complete');
+  });
 });
