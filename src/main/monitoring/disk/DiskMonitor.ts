@@ -15,15 +15,13 @@ type LogicalDiskRow = {
 /**
  * WMI Win32_LogicalDisk, только фиксированные тома (DriveType = 3).
  * Removable/сетевые/оптические (DriveType 2/4/5/6) в v0.1 не показываются (ADR 0009).
+ *
+ * PowerShell `ConvertTo-Json -Compress` отдаёт одиночный объект вместо массива,
+ * когда том один (типично: только C:) — нормализуем до массива здесь, т.к.
+ * флага `-AsArray` нет в Windows PowerShell 5.1.
  */
-export async function defaultDiskSource(): Promise<DiskVolumeMetrics[]> {
-  if (process.platform !== 'win32') return [];
-  const { runPowershellJson } = await import('../../system/ps');
-
-  const rows = await runPowershellJson<LogicalDiskRow[]>(
-    `Get-CimInstance Win32_LogicalDisk -Filter "DriveType = 3" | Select-Object DeviceID,Size,FreeSpace,FileSystem,VolumeName | ConvertTo-Json -Compress`
-  );
-
+export function toDiskVolumes(input: LogicalDiskRow | LogicalDiskRow[] | null): DiskVolumeMetrics[] {
+  const rows = input === null || input === undefined ? [] : Array.isArray(input) ? input : [input];
   return rows
     .map((row) => {
       const total = finiteNonNeg(row.Size);
@@ -43,6 +41,17 @@ export async function defaultDiskSource(): Promise<DiskVolumeMetrics[]> {
       };
     })
     .filter((d): d is DiskVolumeMetrics => d !== null);
+}
+
+export async function defaultDiskSource(): Promise<DiskVolumeMetrics[]> {
+  if (process.platform !== 'win32') return [];
+  const { runPowershellJson } = await import('../../system/ps');
+
+  const rows = await runPowershellJson<LogicalDiskRow[] | LogicalDiskRow>(
+    `Get-CimInstance Win32_LogicalDisk -Filter "DriveType = 3" | Select-Object DeviceID,Size,FreeSpace,FileSystem,VolumeName | ConvertTo-Json -Compress`
+  );
+
+  return toDiskVolumes(rows);
 }
 
 export class DiskMonitor {
