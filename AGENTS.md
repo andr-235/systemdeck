@@ -14,6 +14,16 @@ Five canonical roles using default label names (`needs-triage`, `needs-info`, `r
 
 Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
 
+### Issue lifecycle
+
+Create → sweep → triage → execute. See `docs/agents/create-issue.md` (structure
+from `n8n-create-issue`, GitHub-only, new issues start at `needs-triage`),
+`docs/agents/backlog-triage.md` (`triage-issues`/`triage-issue` as enrichment
+only, no label auto-creation), `docs/agents/triage-labels.md` (canonical
+`needs-triage`/`needs-info`/`ready-for-agent`/`ready-for-human`/`wontfix` +
+`bug`/`enhancement`), `docs/agents/issue-tracker.md` (`gh` CLI as the only
+GitHub substrate — no separate GitHub skill installed).
+
 ### Agent Skills
 
 Skill-first: сначала вызови скилл через `Skill` tool, затем правь код. Каждая правка в `src/` имеет квитанцию `Skill`-вызова; без квитанции работа считается незавершённой.
