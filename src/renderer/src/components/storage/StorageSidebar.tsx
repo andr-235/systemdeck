@@ -10,6 +10,11 @@ function StorageSidebar({ result }: StorageSidebarProps): React.JSX.Element {
   return (
     <>
       <h3 style={{ margin: 0, fontSize: 13 }}>Крупнейшие файлы и типы</h3>
+      {result.inaccessibleDirectories > 0 && (
+        <p role="note" style={{ margin: 0, fontSize: 12 }}>
+          Данные могут быть неполными: недоступно каталогов: {result.inaccessibleDirectories}.
+        </p>
+      )}
       <LargestFilesTable
         files={result.largestFiles}
         fileCount={result.fileCount}

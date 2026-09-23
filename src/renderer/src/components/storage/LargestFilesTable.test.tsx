@@ -15,9 +15,22 @@ describe('Renderer — LargestFilesTable', () => {
   it('показывает путь, размер и готовую категорию', () => {
     render(<LargestFilesTable files={makeFiles()} fileCount={2} inaccessibleDirectories={0} />);
     expect(screen.getByRole('region', { name: 'Крупнейшие файлы' })).toBeInTheDocument();
+    expect(screen.getByText('a.iso')).toBeInTheDocument();
     expect(screen.getByText('C:\\a.iso')).toBeInTheDocument();
     expect(screen.getByText('Archives')).toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(3);
+  });
+
+  it('ограничивает таблицу сотней строк', () => {
+    const files: LargestFileEntry[] = Array.from({ length: 105 }, (_, i) => ({
+      path: `C:\\f${i}.bin`,
+      name: `f${i}.bin`,
+      sizeBytes: 1000 - i,
+      category: 'Other',
+    }));
+    render(<LargestFilesTable files={files} fileCount={105} inaccessibleDirectories={0} />);
+    expect(screen.getAllByRole('row')).toHaveLength(101);
+    expect(screen.queryByText('C:\\f104.bin')).not.toBeInTheDocument();
   });
 
   it('пусто при fileCount 0 — честное «не найдены»', () => {

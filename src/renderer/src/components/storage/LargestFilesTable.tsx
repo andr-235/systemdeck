@@ -1,5 +1,8 @@
 import type { LargestFileEntry } from '@shared/ipc';
 import { formatBytes } from '../../format';
+import { scanEmptyText } from './scanEmptyText';
+
+const MAX_LARGEST_FILES = 100;
 
 type LargestFilesTableProps = {
   files: LargestFileEntry[];
@@ -15,12 +18,11 @@ function LargestFilesTable({
   if (files.length === 0) {
     return (
       <p role="status" style={{ margin: 0, fontSize: 12 }}>
-        {fileCount === 0
-          ? 'Файлы не найдены — том пуст.'
-          : `Файлы не собраны${inaccessibleDirectories > 0 ? ` (недоступно каталогов: ${inaccessibleDirectories})` : ''} — это не «пусто».`}
+        {scanEmptyText('files', fileCount, inaccessibleDirectories)}
       </p>
     );
   }
+  const visible = files.slice(0, MAX_LARGEST_FILES);
   return (
     <div
       role="region"
@@ -38,10 +40,11 @@ function LargestFilesTable({
           </tr>
         </thead>
         <tbody>
-          {files.map((file) => (
+          {visible.map((file) => (
             <tr key={file.path}>
               <td title={file.path} style={{ wordBreak: 'break-all' }}>
-                {file.path}
+                <div>{file.name}</div>
+                <div style={{ opacity: 0.6, fontSize: 11 }}>{file.path}</div>
               </td>
               <td className="sd-num">{formatBytes(file.sizeBytes)}</td>
               <td>{file.category}</td>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { FileTypeTotal } from '@shared/ipc';
 import { formatBytes } from '../../format';
+import { scanEmptyText } from './scanEmptyText';
 
 type TypeTotalsSummaryProps = {
   totals: FileTypeTotal[];
@@ -24,9 +25,7 @@ function TypeTotalsSummary({
   if (sorted.length === 0) {
     return (
       <p role="status" style={{ margin: 0, fontSize: 12 }}>
-        {fileCount === 0
-          ? 'Категорий нет — файлы не найдены.'
-          : `Сводка не собрана${inaccessibleDirectories > 0 ? ` (недоступно каталогов: ${inaccessibleDirectories})` : ''} — это не «пусто».`}
+        {scanEmptyText('types', fileCount, inaccessibleDirectories)}
       </p>
     );
   }

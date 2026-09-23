@@ -36,6 +36,13 @@ describe('Renderer — StorageSidebar', () => {
     expect(screen.getByText('C:\\a.iso')).toBeInTheDocument();
   });
 
+  it('помечает неполноту при недоступных каталогах', () => {
+    render(<StorageSidebar result={makeResult({ inaccessibleDirectories: 2 })} />);
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent('неполными');
+    expect(note).toHaveTextContent('недоступно каталогов: 2');
+  });
+
   it('пустой результат с недоступностью — без ложного «пусто»', () => {
     render(
       <StorageSidebar
