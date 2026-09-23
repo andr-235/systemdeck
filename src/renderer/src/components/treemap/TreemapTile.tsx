@@ -14,8 +14,7 @@ function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps)
   const isFiles = !leaf.dir;
   const share = totalBytes > 0 ? leaf.sizeBytes / totalBytes : 0;
   const showLabel = tile.width > 44 && tile.height > 22;
-  const showSize = tile.width > 60 && tile.height > 40;
-  const content = (
+  const showSize = tile.width > 60 && tile.height > 40;  const content = (
     <>
       <title>{`${leaf.label} — ${formatBytes(leaf.sizeBytes)}`}</title>
       <rect
@@ -23,8 +22,8 @@ function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps)
         y={tile.y}
         width={tile.width}
         height={tile.height}
-        fill={tileFill(share, leaf.inaccessible, isFiles)}
-        stroke={tileStroke(share, leaf.inaccessible, isFiles)}
+        fill={tileFill(leaf.path, share, leaf.inaccessible, isFiles)}
+        stroke={tileStroke(leaf.path, share, leaf.inaccessible, isFiles)}
         strokeWidth={leaf.inaccessible ? 2 : 1}
         strokeDasharray={leaf.inaccessible ? '5 3' : undefined}
         rx={3}
