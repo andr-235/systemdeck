@@ -32,8 +32,8 @@ PowerShell `ConvertTo-Json -Compress` без `-AsArray` возвращает о�
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | В `src/main/monitoring/disk/DiskMonitor.ts`: извлечь `toDiskVolumes(input: LogicalDiskRow \| LogicalDiskRow[] \| null): DiskVolumeMetrics[]`, в `defaultDiskSource` типизировать ответ как `LogicalDiskRow[] \| LogicalDiskRow` и прогнать через неё | ✅ | 2026-09-23 |
-| TASK-002 | В `src/main/monitoring/disk/DiskMonitor.test.ts`: тесты — одиночный объект даёт 1 том; массив как раньше; `null` даёт `[]` | ✅ | 2026-09-23 |
+| TASK-001 | В `src/main/monitoring/disk/DiskMonitor.ts`: извлечь `toDiskVolumes(input: LogicalDiskRow \| LogicalDiskRow[] \| null \| undefined): DiskVolumeMetrics[]`, в `defaultDiskSource` типизировать ответ как `LogicalDiskRow[] \| LogicalDiskRow` и прогнать через неё | ✅ | 2026-09-23 |
+| TASK-002 | В `src/main/monitoring/disk/DiskMonitor.test.ts`: тесты — одиночный объект даёт 1 том; массив как раньше; `null`/`undefined`/`[]` дают `[]` | ✅ | 2026-09-23 |
 | TASK-003 | Прогон `npm run check:boundaries`, `npm run typecheck`, `npm run test` (полный) | ✅ | 2026-09-23 |
 
 ## 3. Alternatives
@@ -56,7 +56,7 @@ PowerShell `ConvertTo-Json -Compress` без `-AsArray` возвращает о�
 
 - **TEST-001**: Одиночный объект `{DeviceID: 'C:', ...}` → один `DiskVolumeMetrics` с корректными полями.
 - **TEST-002**: Массив из двух строк → два тома (регрессия существующего поведения).
-- **TEST-003**: `null` → `[]`.
+- **TEST-003**: `null`/`undefined`/`[]` → `[]`.
 - **TEST-004**: Существующие тесты `DiskMonitor.read` (source OK / source throws) остаются зелёными.
 
 ## 7. Risks & Assumptions
