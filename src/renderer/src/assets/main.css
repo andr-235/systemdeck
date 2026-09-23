@@ -745,8 +745,10 @@ body {
 
 .sd-treemap-svg {
   width: 100%;
+  max-width: 640px;
   height: auto;
   display: block;
+  margin-inline: auto;
   border-radius: 8px;
 }
 

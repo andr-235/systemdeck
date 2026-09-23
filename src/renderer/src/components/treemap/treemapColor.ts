@@ -1,20 +1,23 @@
-/** Детерминированный оттенок по ключу — цвет квадрата привязан к каталогу. */
-export function treemapHue(key: string): number {
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) {
-    hash = (hash * 31 + key.charCodeAt(i)) % 360;
-  }
-  return (hash + 360) % 360;
+/** Одноцветная шкала treemap (hue 217 — семейство --sd-color-secondary):
+ * чем больше доля узла, тем темнее плитка. Спокойнее радуги по хешу пути. */
+
+const FOCUS_HUE = 217;
+
+function clampShare(share: number): number {
+  if (!Number.isFinite(share)) return 0;
+  return Math.min(1, Math.max(0, share));
 }
 
-export function tileFill(hue: number, inaccessible: boolean, isFiles: boolean): string {
-  if (isFiles) return 'var(--sd-color-muted)';
+export function tileFill(share: number, inaccessible: boolean, isFiles: boolean): string {
+  if (isFiles) return `hsl(${FOCUS_HUE} 30% 90%)`;
   if (inaccessible) return '#cbd5e1';
-  return `hsl(${hue} 55% 78%)`;
+  const lightness = Math.round(84 - 26 * clampShare(share));
+  return `hsl(${FOCUS_HUE} 60% ${lightness}%)`;
 }
 
-export function tileStroke(hue: number, inaccessible: boolean, isFiles: boolean): string {
-  if (isFiles) return 'var(--sd-color-border)';
+export function tileStroke(share: number, inaccessible: boolean, isFiles: boolean): string {
+  if (isFiles) return `hsl(${FOCUS_HUE} 25% 68%)`;
   if (inaccessible) return '#64748b';
-  return `hsl(${hue} 55% 38%)`;
+  const lightness = Math.round(52 - 14 * clampShare(share));
+  return `hsl(${FOCUS_HUE} 55% ${lightness}%)`;
 }

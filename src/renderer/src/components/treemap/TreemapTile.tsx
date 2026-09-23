@@ -1,18 +1,18 @@
 import type { TreemapNode } from '../../treemap';
 import { formatBytes } from '../../format';
-import { tileFill, tileStroke, treemapHue } from './treemapColor';
+import { tileFill, tileStroke } from './treemapColor';
 
 type TreemapTileProps = {
   tile: TreemapNode;
+  totalBytes: number;
   clickable: boolean;
   onDrill: (path: string) => void;
 };
 
-function TreemapTile({ tile, clickable, onDrill }: TreemapTileProps): React.JSX.Element {
+function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps): React.JSX.Element {
   const { leaf } = tile;
   const isFiles = !leaf.dir;
-  const hue = treemapHue(leaf.path);
-  const label = leaf.inaccessible ? `${leaf.label} 🔒` : leaf.label;
+  const share = totalBytes > 0 ? leaf.sizeBytes / totalBytes : 0;
   const showLabel = tile.width > 44 && tile.height > 22;
   const showSize = tile.width > 60 && tile.height > 40;
   const content = (
@@ -23,15 +23,15 @@ function TreemapTile({ tile, clickable, onDrill }: TreemapTileProps): React.JSX.
         y={tile.y}
         width={tile.width}
         height={tile.height}
-        fill={tileFill(hue, leaf.inaccessible, isFiles)}
-        stroke={tileStroke(hue, leaf.inaccessible, isFiles)}
+        fill={tileFill(share, leaf.inaccessible, isFiles)}
+        stroke={tileStroke(share, leaf.inaccessible, isFiles)}
         strokeWidth={leaf.inaccessible ? 2 : 1}
         strokeDasharray={leaf.inaccessible ? '5 3' : undefined}
-        rx={2}
+        rx={3}
       />
       {showLabel && (
         <text x={tile.x + 4} y={tile.y + 16} fontSize={12} fill="var(--sd-color-foreground)" pointerEvents="none">
-          {label.length > 18 ? `${label.slice(0, 17)}…` : label}
+          {leaf.label.length > 18 ? `${leaf.label.slice(0, 17)}…` : leaf.label}
         </text>
       )}
       {showSize && (
