@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { DiskVolumeMetrics } from '@shared/ipc';
 import { useStorageScan } from '../useStorageScan';
 import { formatBytes, formatDateTime } from '../format';
-import StorageTreemap from './StorageTreemap';
+import StorageTreemap from './treemap/StorageTreemap';
 
 type StoragePageProps = {
   disks: DiskVolumeMetrics[] | null;
