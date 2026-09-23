@@ -79,7 +79,9 @@ describe('DiskMonitor (node project)', () => {
     ]);
   });
 
-  it('toDiskVolumes возвращает [] для null', () => {
+  it('toDiskVolumes возвращает [] для null, undefined и пустого массива', () => {
     expect(toDiskVolumes(null)).toEqual([]);
+    expect(toDiskVolumes(undefined)).toEqual([]);
+    expect(toDiskVolumes([])).toEqual([]);
   });
 });

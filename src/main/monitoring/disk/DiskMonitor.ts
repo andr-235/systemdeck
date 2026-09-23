@@ -20,7 +20,9 @@ type LogicalDiskRow = {
  * когда том один (типично: только C:) — нормализуем до массива здесь, т.к.
  * флага `-AsArray` нет в Windows PowerShell 5.1.
  */
-export function toDiskVolumes(input: LogicalDiskRow | LogicalDiskRow[] | null): DiskVolumeMetrics[] {
+export function toDiskVolumes(
+  input: LogicalDiskRow | LogicalDiskRow[] | null | undefined
+): DiskVolumeMetrics[] {
   const rows = input === null || input === undefined ? [] : Array.isArray(input) ? input : [input];
   return rows
     .map((row) => {
