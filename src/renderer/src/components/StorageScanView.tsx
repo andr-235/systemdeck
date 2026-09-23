@@ -39,9 +39,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
         ) : (
           <>
             <span role="presentation" className="skeleton-bar" style={{ width: 160, height: 8 }} />
-            <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
-              Итоги появятся после завершения скана.
-            </p>
+            <p className="sd-hint">Итоги появятся после завершения скана.</p>
           </>
         )}
       </section>
@@ -50,7 +48,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
           {state.status === 'complete' ? (
             <StorageTreemap tree={state.result.tree} />
           ) : (
-            <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
+            <p className="sd-hint">
               {scanning
                 ? 'Карта строится по ходу сканирования…'
                 : 'Запустите скан, чтобы увидеть карту занятого места.'}
@@ -61,7 +59,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
           {state.status === 'complete' ? (
             <StorageSidebar result={state.result} />
           ) : (
-            <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
+            <p className="sd-hint">
               {scanning
                 ? 'Сводка появится после завершения скана…'
                 : 'Здесь появятся крупнейшие файлы и сводка по типам.'}

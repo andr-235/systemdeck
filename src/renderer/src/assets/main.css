@@ -528,6 +528,12 @@ body {
   color: var(--sd-color-foreground-dim);
 }
 
+.sd-hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
 .sd-tablist {
   display: flex;
   gap: var(--sd-space-sm);
