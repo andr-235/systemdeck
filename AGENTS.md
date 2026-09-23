@@ -16,7 +16,8 @@ Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain
 
 ### Agent Skills
 
-Runtime — OpenCode (`.agents/skills` + `skills-lock.json`). Курированный набор из `github/awesome-copilot`: `create-architectural-decision-record`, `create-specification`, `create-implementation-plan`, `conventional-commit`, `security-review`, `git-commit` (+ существующие 7 из `PyModel`). Установка — `npx skills add github/awesome-copilot --skill <name> -y` с фиксацией `computedHash`. Агент берёт только `ready-for-agent` → PR, обязателен `npm run check` (`lint`, `format:check`, `check:boundaries`, `typecheck`, `test`). См. `CONTEXT.md` раздел `Agent Skills` и `docs/adr/0014-agent-skills-from-awesome-copilot.md`.
+Skill-first: сначала вызови скилл через `Skill` tool, затем правь код. Каждая правка в `src/` имеет квитанцию `Skill`-вызова; без квитанции работа считается незавершённой.
+Runtime — OpenCode (`.agents/skills` + `skills-lock.json`). Полный пайплайн — единственный источник правды в `opencode.json` (`agent.systemdeck.prompt`); здесь только гейт. В PR и комментарии к issue перечисли использованные скиллы (`Skills: id1, id2`) — это видимое доказательство вызова.
 
 ### SystemDeck Agent
 
