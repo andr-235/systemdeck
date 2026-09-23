@@ -1,6 +1,6 @@
-# Создание issue (адаптация `n8n:create-issue`)
+# Создание issue (адаптация `n8n-create-issue`)
 
-Канон структуры — из скилла `n8n:create-issue` (`.agents/skills/n8n-create-issue/SKILL.md`).
+Канон структуры — из скилла `n8n-create-issue` (`.agents/skills/n8n-create-issue/SKILL.md`).
 Системные отличия SystemDeck зафиксированы здесь и приоритетны над текстом скилла.
 
 ## Что берём из скилла без изменений

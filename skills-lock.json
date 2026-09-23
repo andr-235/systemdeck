@@ -55,10 +55,10 @@
       "skillPath": "skills/git-commit/SKILL.md",
       "computedHash": "554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f"
     },
-    "n8n:create-issue": {
+    "n8n-create-issue": {
       "source": "n8n-io/n8n",
       "sourceType": "github",
-      "skillPath": ".agents/skills/create-issue/SKILL.md",
+      "skillPath": ".agents/skills/n8n-create-issue/SKILL.md",
       "computedHash": "06d14fac3e399f7d82f47ac755dce5859ba6d02f43a7ab58f0a7ce631d6e0d57"
     },
     "playwright": {

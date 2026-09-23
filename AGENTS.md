@@ -17,7 +17,7 @@ Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain
 ### Issue lifecycle
 
 Create → sweep → triage → execute. See `docs/agents/create-issue.md` (structure
-from `n8n:create-issue`, GitHub-only, new issues start at `needs-triage`),
+from `n8n-create-issue`, GitHub-only, new issues start at `needs-triage`),
 `docs/agents/backlog-triage.md` (`triage-issues`/`triage-issue` as enrichment
 only, no label auto-creation), `docs/agents/triage-labels.md` (canonical
 `needs-triage`/`needs-info`/`ready-for-agent`/`ready-for-human`/`wontfix` +

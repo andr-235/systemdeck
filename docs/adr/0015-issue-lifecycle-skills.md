@@ -2,7 +2,7 @@
 
 Контекст — issue в `andr-235/systemdeck` велись вручную: структура тел не зафиксирована,
 канонические метки `needs-triage`/`needs-info` отсутствовали в трекере, таксономия разбора
-backlog не определена. Решили: взять структуру из `n8n:create-issue` (Goal→Background→Scope→Acceptance→Out of scope,
+backlog не определена. Решили: взять структуру из `n8n-create-issue` (Goal→Background→Scope→Acceptance→Out of scope,
 для багов Description→Expected→Actual→Steps→Context), ведение после создания — из `triage`
 (mattpocock/skills, state machine needs-triage/needs-info/ready-for-agent/ready-for-human/wontfix),
 массовый разбор — из `triage-issue`/`triage-issues` (tomzx/agents); все через `npx skills add`
@@ -10,7 +10,7 @@ backlog не определена. Решили: взять структуру �
 
 ## Considered Options
 
-- Сырой `n8n:create-issue` без адаптации — сохраняет Linear-ветку (MCP, команды, приоритеты,
+- Сырой `n8n-create-issue` без адаптации — сохраняет Linear-ветку (MCP, команды, приоритеты,
   Notion-lookup) и n8n-специфику (GitHub только для багов, запрет ручных меток); отвергнут —
   в SystemDeck только GitHub через `gh`, новый issue стартует с `needs-triage` (инверсия гардрэйла n8n).
 - Полная таксономия tomzx (`area:*`/`platform:*`/`api:*`, urgency/importance, Issue Types,
