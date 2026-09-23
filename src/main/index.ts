@@ -11,6 +11,7 @@ import { IPC_CHANNELS, IPC_PUSH_CHANNELS } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import { LiveScheduler } from './monitoring/live/LiveScheduler';
 import { ScanManager } from './storage/ScanManager';
+import { resolveCspHeaders } from './security/csp';
 
 initLogger();
 const mainLogger = getLogger('main');
@@ -139,17 +140,19 @@ app.whenReady().then(() => {
     callback(false);
   });
 
-  // CSP via headers — defence-in-depth к meta в index.html (best practice)
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; connect-src 'self' ws: wss:",
-        ],
-      },
+  // CSP via headers — defence-in-depth к meta в index.html (best practice).
+  // В dev не ставится: инлайн-преамбула Vite HMR несовместима с script-src 'self'.
+  const cspHeaders = resolveCspHeaders(is.dev);
+  if (cspHeaders !== null) {
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          ...cspHeaders,
+        },
+      });
     });
-  });
+  }
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
