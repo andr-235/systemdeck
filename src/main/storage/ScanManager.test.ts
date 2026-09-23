@@ -136,6 +136,23 @@ describe('ScanManager', () => {
     );
   });
 
+  it('replaces the cached result on rescan of the same volume', async () => {
+    let size = 10;
+    const mutableFs: ScanFs = {
+      readdir: async () => [fileEntry('a.bin')],
+      stat: async () => ({ size, isFile: () => true }),
+    };
+    const { manager, events } = createManager(mutableFs);
+    await manager.startScan('X:');
+    expect(manager.getScanResult('X:')?.totalBytes).toBe(10);
+
+    size = 42;
+    await manager.startScan('X:');
+    const replaced = manager.getScanResult('X:');
+    expect(replaced?.totalBytes).toBe(42);
+    expect(events.filter((e) => e.status === 'complete').length).toBe(2);
+  });
+
   it('throttles rapid scanning events but always emits the terminal complete', async () => {
     const branchingFs: ScanFs = {
       readdir: async (path) => {

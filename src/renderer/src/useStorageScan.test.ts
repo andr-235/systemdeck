@@ -185,6 +185,19 @@ describe('Renderer — useStorageScan (jsdom project)', () => {
     await waitFor(() => expect(result.current.state).toMatchObject({ status: 'complete' }));
   });
 
+  it('does not auto-start a scan on mount and serves cache without rescan', async () => {
+    const startScan = vi.fn(async () => ({ ok: true as const, data: undefined }));
+    const getScanResult = vi.fn(async () => ({ ok: true as const, data: makeResult() }));
+    const capture = captureApi(getScanResult);
+    // подменяем startScan после captureApi, чтобы отследить авто-вызовы
+    (window.api.storage.startScan as unknown as typeof startScan) = startScan;
+    void capture;
+    const { result } = renderHook(() => useStorageScan('C:'));
+    await waitFor(() => expect(result.current.state.status).toBe('complete'));
+    expect(startScan).not.toHaveBeenCalled();
+    expect(getScanResult).toHaveBeenCalledWith('C:');
+  });
+
   it('transitions idle to scanning on a scanning push (scan started elsewhere)', async () => {
     const capture = captureApi();
     const { result } = renderHook(() => useStorageScan('C:'));
