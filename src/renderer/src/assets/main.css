@@ -528,6 +528,39 @@ body {
   color: var(--sd-color-foreground-dim);
 }
 
+.sd-tablist {
+  display: flex;
+  gap: var(--sd-space-sm);
+  border-bottom: 1px solid var(--sd-color-border);
+}
+
+.sd-tab {
+  min-height: 44px;
+  padding: var(--sd-space-md) var(--sd-space-lg);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--sd-color-foreground-dim);
+  font-family: var(--sd-font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sd-tab:hover {
+  color: var(--sd-color-foreground);
+}
+
+.sd-tab[aria-selected='true'] {
+  border-bottom-color: var(--sd-color-primary);
+  color: var(--sd-color-foreground);
+  font-weight: 600;
+}
+
+.sd-tab:focus-visible {
+  outline: 2px solid var(--sd-color-ring);
+  outline-offset: -2px;
+}
+
 .sd-storage-toolbar {
   display: flex;
   align-items: center;

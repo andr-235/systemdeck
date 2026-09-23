@@ -28,7 +28,7 @@ function LargestFilesTable({
       role="region"
       aria-label="Крупнейшие файлы"
       tabIndex={0}
-      style={{ overflow: 'auto', maxHeight: 260 }}
+      style={{ overflow: 'auto', maxHeight: 420 }}
     >
       <table className="sd-process-table" style={{ width: '100%' }}>
         <caption className="sd-sr-only">Крупнейшие файлы тома (до 100)</caption>
