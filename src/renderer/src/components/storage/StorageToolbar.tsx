@@ -1,9 +1,10 @@
 import type { DiskVolumeMetrics } from '@shared/ipc';
+import type { StorageScanState } from '../../useStorageScan';
 
 type StorageToolbarProps = {
   disks: DiskVolumeMetrics[];
   volumeId: string;
-  status: string;
+  status: StorageScanState['status'];
   onSelectVolume: (volumeId: string) => void;
   onStart: () => void;
   onCancel: () => void;

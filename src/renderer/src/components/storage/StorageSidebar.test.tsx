@@ -39,13 +39,17 @@ describe('Renderer — StorageSidebar', () => {
     expect(screen.queryByRole('region', { name: 'Крупнейшие файлы' })).not.toBeInTheDocument();
   });
 
-  it('стрелки переключают табы с клавиатуры', () => {
+  it('стрелки, Home и End переключают табы с клавиатуры', () => {
     render(<StorageSidebar result={makeResult()} />);
     const filesTab = screen.getByRole('tab', { name: 'Файлы' });
     filesTab.focus();
     fireEvent.keyDown(screen.getByRole('tablist'), { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'По типам' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(screen.getByRole('tablist'), { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: 'Файлы' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'End' });
+    expect(screen.getByRole('tab', { name: 'По типам' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(screen.getByRole('tablist'), { key: 'Home' });
     expect(screen.getByRole('tab', { name: 'Файлы' })).toHaveAttribute('aria-selected', 'true');
   });
 

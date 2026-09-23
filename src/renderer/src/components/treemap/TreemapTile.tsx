@@ -1,6 +1,11 @@
 import type { TreemapNode } from '../../treemap';
 import { formatBytes } from '../../format';
-import { tileFill, tileStroke } from './treemapColor';
+import { tileColors } from './treemapColor';
+
+const MIN_LABEL_WIDTH = 44;
+const MIN_LABEL_HEIGHT = 22;
+const MIN_SIZE_WIDTH = 60;
+const MIN_SIZE_HEIGHT = 40;
 
 type TreemapTileProps = {
   tile: TreemapNode;
@@ -13,8 +18,9 @@ function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps)
   const { leaf } = tile;
   const isFiles = !leaf.dir;
   const share = totalBytes > 0 ? leaf.sizeBytes / totalBytes : 0;
-  const showLabel = tile.width > 44 && tile.height > 22;
-  const showSize = tile.width > 60 && tile.height > 40;  const content = (
+  const colors = tileColors(leaf.path, share, leaf.inaccessible, isFiles);
+  const showLabel = tile.width > MIN_LABEL_WIDTH && tile.height > MIN_LABEL_HEIGHT;
+  const showSize = tile.width > MIN_SIZE_WIDTH && tile.height > MIN_SIZE_HEIGHT;  const content = (
     <>
       <title>{`${leaf.label} — ${formatBytes(leaf.sizeBytes)}`}</title>
       <rect
@@ -22,8 +28,8 @@ function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps)
         y={tile.y}
         width={tile.width}
         height={tile.height}
-        fill={tileFill(leaf.path, share, leaf.inaccessible, isFiles)}
-        stroke={tileStroke(leaf.path, share, leaf.inaccessible, isFiles)}
+        fill={colors.fill}
+        stroke={colors.stroke}
         strokeWidth={leaf.inaccessible ? 2 : 1}
         strokeDasharray={leaf.inaccessible ? '5 3' : undefined}
         rx={3}

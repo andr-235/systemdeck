@@ -3,16 +3,9 @@ import { useStorageScan } from '../useStorageScan';
 import StorageToolbar from './storage/StorageToolbar';
 import StorageScanStatus from './storage/StorageScanStatus';
 import StorageResultSummary from './storage/StorageResultSummary';
+import StorageStatusBadge from './storage/StorageStatusBadge';
 import StorageTreemap from './treemap/StorageTreemap';
 import StorageSidebar from './storage/StorageSidebar';
-
-const STATUS_TEXT: Record<string, string> = {
-  idle: 'Ожидание — скан не запускался',
-  scanning: 'Сканирование…',
-  complete: 'Готово',
-  cancelled: 'Отменено',
-  failed: 'Ошибка',
-};
 
 type StorageScanViewProps = {
   volumeId: string;
@@ -27,13 +20,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
     <section className="sd-page" aria-label="Хранилище">
       <div className="sd-storage-head">
         <h2 className="sd-page-title">Хранилище</h2>
-        <span
-          role="status"
-          aria-label={`Статус: ${STATUS_TEXT[state.status] ?? state.status}`}
-          className="sd-status-badge"
-        >
-          {STATUS_TEXT[state.status] ?? state.status}
-        </span>
+        <StorageStatusBadge status={state.status} />
       </div>
       <section className="sd-card" aria-label="Управление сканированием">
         <StorageToolbar
@@ -46,13 +33,20 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
         />
         <StorageScanStatus state={state} />
       </section>
-      {state.status === 'complete' && (
-        <section className="sd-card" aria-label="Итоги сканирования">
+      <section className="sd-card" aria-label="Итоги сканирования">
+        {state.status === 'complete' ? (
           <StorageResultSummary result={state.result} />
-        </section>
-      )}
+        ) : (
+          <>
+            <span role="presentation" className="skeleton-bar" style={{ width: 160, height: 8 }} />
+            <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
+              Итоги появятся после завершения скана.
+            </p>
+          </>
+        )}
+      </section>
       <div className="sd-storage-layout">
-        <div className="sd-storage-treemap" aria-label="Карта занятого места" data-testid="storage-treemap">
+        <div className="sd-storage-treemap sd-card" aria-label="Карта занятого места" data-testid="storage-treemap">
           {state.status === 'complete' ? (
             <StorageTreemap tree={state.result.tree} />
           ) : (
@@ -63,7 +57,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
             </p>
           )}
         </div>
-        <aside className="sd-storage-sidebar" aria-label="Детали хранилища" data-testid="storage-sidebar">
+        <aside className="sd-storage-sidebar sd-card" aria-label="Детали хранилища" data-testid="storage-sidebar">
           {state.status === 'complete' ? (
             <StorageSidebar result={state.result} />
           ) : (

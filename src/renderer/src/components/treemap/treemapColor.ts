@@ -38,18 +38,20 @@ export function treemapPaletteIndex(key: string): number {
   return (hash + PALETTE.length) % PALETTE.length;
 }
 
-export function tileFill(key: string, share: number, inaccessible: boolean, isFiles: boolean): string {
-  if (isFiles) return FILES_FILL;
-  if (inaccessible) return LOCKED_FILL;
-  const base = PALETTE[treemapPaletteIndex(key)] as PaletteEntry;
-  const lightness = Math.round(base.lightness - 10 * clampShare(share));
-  return `hsl(${base.hue} ${base.saturation}% ${lightness}%)`;
-}
+export type TreemapTileColors = { fill: string; stroke: string };
 
-export function tileStroke(key: string, share: number, inaccessible: boolean, isFiles: boolean): string {
-  if (isFiles) return FILES_STROKE;
-  if (inaccessible) return LOCKED_STROKE;
+export function tileColors(
+  key: string,
+  share: number,
+  inaccessible: boolean,
+  isFiles: boolean
+): TreemapTileColors {
+  if (isFiles) return { fill: FILES_FILL, stroke: FILES_STROKE };
+  if (inaccessible) return { fill: LOCKED_FILL, stroke: LOCKED_STROKE };
   const base = PALETTE[treemapPaletteIndex(key)] as PaletteEntry;
-  const lightness = Math.round(base.lightness - 34 - 6 * clampShare(share));
-  return `hsl(${base.hue} ${base.saturation}% ${lightness}%)`;
+  const clamped = clampShare(share);
+  return {
+    fill: `hsl(${base.hue} ${base.saturation}% ${Math.round(base.lightness - 10 * clamped)}%)`,
+    stroke: `hsl(${base.hue} ${base.saturation}% ${Math.round(base.lightness - 34 - 6 * clamped)}%)`,
+  };
 }

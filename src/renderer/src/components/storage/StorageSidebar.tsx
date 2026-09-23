@@ -12,16 +12,16 @@ function StorageSidebar({ result }: StorageSidebarProps): React.JSX.Element {
   const [active, setActive] = useState<SidebarTab>('files');
   const baseId = useId();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const goTo = (index: number): void => {
+  const selectTab = (index: number): void => {
     setActive(TAB_IDS[index] as SidebarTab);
     tabRefs.current[index]?.focus();
   };
   const onKeyDown = (e: React.KeyboardEvent): void => {
     const at = TAB_IDS.indexOf(active);
-    if (e.key === 'ArrowRight') goTo((at + 1) % TAB_IDS.length);
-    else if (e.key === 'ArrowLeft') goTo((at - 1 + TAB_IDS.length) % TAB_IDS.length);
-    else if (e.key === 'Home') goTo(0);
-    else if (e.key === 'End') goTo(TAB_IDS.length - 1);
+    if (e.key === 'ArrowRight') selectTab((at + 1) % TAB_IDS.length);
+    else if (e.key === 'ArrowLeft') selectTab((at - 1 + TAB_IDS.length) % TAB_IDS.length);
+    else if (e.key === 'Home') selectTab(0);
+    else if (e.key === 'End') selectTab(TAB_IDS.length - 1);
   };
   return (
     <>
