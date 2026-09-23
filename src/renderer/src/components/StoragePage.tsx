@@ -3,6 +3,7 @@ import type { DiskVolumeMetrics } from '@shared/ipc';
 import { useStorageScan } from '../useStorageScan';
 import { formatBytes, formatDateTime } from '../format';
 import StorageTreemap from './treemap/StorageTreemap';
+import StorageSidebar from './storage/StorageSidebar';
 
 type StoragePageProps = {
   disks: DiskVolumeMetrics[] | null;
@@ -160,15 +161,7 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: ScanViewProps): Re
           data-testid="storage-sidebar"
         >
           {state.status === 'complete' ? (
-            <>
-              <p style={{ margin: 0, fontSize: 12 }} className="sd-num">
-                Крупнейших файлов: {state.result.largestFiles.length} · Категорий:{' '}
-                {state.result.typeTotals.length}
-              </p>
-              <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
-                Крупнейшие файлы и сводка по типам появятся здесь (issue #40).
-              </p>
-            </>
+            <StorageSidebar result={state.result} />
           ) : (
             <p style={{ margin: 0, fontSize: 12, opacity: 0.75 }}>
               {scanning
