@@ -36,3 +36,18 @@ Runtime — OpenCode (`.agents/skills` + `skills-lock.json`). Полный па�
 ## Commits
 
 All commit messages are written in **Russian**. Format — `type: brief description` (e.g., `feat:`, `fix:`, `chore:`, `docs:`), body in Russian if needed.
+
+## План и размер компонентов
+
+Жёсткие гейты, нарушение — блокер PR:
+
+1. План-файл обязателен: до любых правок в `src/` создай план по шаблону
+   `create-implementation-plan` в `plan/[purpose]-[component]-1.md`
+   (`feature|refactor|...`), свяжи его с issue и упомяни в PR.
+   Правка `src/` без план-файла считается незавершённой работой.
+2. Лимит размера: один файл компонента — не более 80 строк кода
+   (без пустых строк и комментариев), один файл — одна ответственность
+   (состояние, цвет, breadcrumb, тайл, каркас, композиция).
+   Перед коммитом проверь длину изменённых файлов и разбей превышение на модули.
+3. Тесты рядом с фичей (colocated), импорты — напрямую по путям файлов,
+   без barrel-`index.ts` реэкспортов.

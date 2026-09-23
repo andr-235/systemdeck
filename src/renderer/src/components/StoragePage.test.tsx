@@ -175,7 +175,7 @@ describe('Renderer — StoragePage (jsdom project)', () => {
     await waitFor(() => expect(screen.getByText(/Отменено/)).toBeInTheDocument());
   });
 
-  it('complete: сводка и резерв treemap + сайдбар', async () => {
+  it('complete: сводка и treemap с drill-down', async () => {
     setup({
       getScanResult: async () => ({ ok: true as const, data: makeResult({ totalBytes: 777 }) }),
     });
@@ -183,9 +183,9 @@ describe('Renderer — StoragePage (jsdom project)', () => {
     expect(screen.getByText(/Всего/)).toBeInTheDocument();
     expect(screen.getByTestId('storage-treemap')).toBeInTheDocument();
     expect(screen.getByTestId('storage-sidebar')).toBeInTheDocument();
-    expect(screen.getByText(/Treemap с drill-down появится здесь/)).toBeInTheDocument();
+    expect(screen.getByTestId('storage-treemap-svg')).toBeInTheDocument();
     expect(
-      screen.getByText(/Крупнейшие файлы и сводка по типам появятся здесь/)
+      screen.getByRole('navigation', { name: 'Хлебные крошки каталога' })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Сканировать заново' })).toBeInTheDocument();
   });
