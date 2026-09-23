@@ -464,6 +464,70 @@ body {
   padding: var(--sd-space-2xl);
 }
 
+.sd-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-lg);
+  padding: var(--sd-space-xl);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 12px;
+  background: var(--sd-color-surface);
+  box-shadow: var(--sd-shadow-sm);
+}
+
+.sd-storage-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-lg);
+  flex-wrap: wrap;
+}
+
+.sd-status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--sd-color-border);
+  background: var(--sd-color-muted);
+  color: var(--sd-color-foreground);
+}
+
+.sd-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sd-space-lg);
+  margin: 0;
+  padding: 0;
+}
+
+.sd-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-xs);
+  padding: var(--sd-space-lg) var(--sd-space-xl);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 10px;
+  background: var(--sd-color-background);
+}
+
+.sd-stat-label {
+  font-size: 12px;
+  color: var(--sd-color-foreground-dim);
+}
+
+.sd-stat-value {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--sd-color-foreground);
+}
+
+.sd-stat-sub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--sd-color-foreground-dim);
+}
+
 .sd-storage-toolbar {
   display: flex;
   align-items: center;

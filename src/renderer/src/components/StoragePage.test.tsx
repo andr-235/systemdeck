@@ -190,6 +190,19 @@ describe('Renderer — StoragePage (jsdom project)', () => {
     expect(screen.getByRole('button', { name: 'Сканировать заново' })).toBeInTheDocument();
   });
 
+  it('complete: stat-карточки с итогами (Всего/Файлов/Недоступно/Длительность)', async () => {
+    setup({
+      getScanResult: async () => ({ ok: true as const, data: makeResult({ totalBytes: 777 }) }),
+    });
+    await waitFor(() => expect(screen.getByText(/Готово/)).toBeInTheDocument());
+    const stats = screen.getByLabelText('Итоги сканирования');
+    expect(stats).toBeInTheDocument();
+    expect(screen.getByText('Всего')).toBeInTheDocument();
+    expect(screen.getByText('Файлов')).toBeInTheDocument();
+    expect(screen.getByText('Недоступно каталогов')).toBeInTheDocument();
+    expect(screen.getByText('Длительность')).toBeInTheDocument();
+  });
+
   it('failed: показывает ошибку и кнопку повторного скана', async () => {
     const capture = setup();
     await waitFor(() => expect(screen.getByText(/Ожидание/)).toBeInTheDocument());
