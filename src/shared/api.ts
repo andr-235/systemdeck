@@ -56,11 +56,9 @@ export interface StorageApi {
   startScan: (
     request: StorageScanStartRequest
   ) => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanStart>>;
-  getScanResult: (
-    volumeId: string
-  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanGet>>;
+  getScanResult: (volumeId: string) => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanGet>>;
   cancelScan: () => Promise<IpcResultFor<typeof IPC_CHANNELS.storageScanCancel>>;
   onScanProgress: (callback: (event: ScanProgressEvent) => void) => Unsubscribe;
 }
 
-export const SHARED_CONTRACT_VERSION = 'sd-020' as const;
+export const SHARED_CONTRACT_VERSION = 'sd-021' as const;

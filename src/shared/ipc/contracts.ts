@@ -1,5 +1,5 @@
 import { IPC_CHANNELS, type IpcChannel, IPC_PUSH_CHANNELS, type IpcPushChannel } from './channels';
-import type { IpcResult } from './errors';
+import type { IpcError, IpcResult } from './errors';
 
 export type PingRequest = {
   version: string;
@@ -244,6 +244,34 @@ export type ScanProgressEvent =
   | { status: 'complete'; volumeId: string; result: ScanResult }
   | { status: 'cancelled'; volumeId: string }
   | { status: 'failed'; volumeId: string; message: string };
+
+// --- Cleaner engine (ADR 0017, issue #54) ----------------------------------------
+// Источник кандидатов — только allow-правила движка в Main; Scan Result EPIC 4
+// строго read-only и кандидатами не является. Удаление выполняет только Main.
+
+export type CleanupCategory =
+  'user-temp' | 'windows-temp' | 'recycle-bin' | 'thumbnail-cache' | 'browser-cache' | 'log-files';
+
+export type CleanupCandidate = {
+  path: string;
+  sizeBytes: number;
+  category: CleanupCategory;
+  /** Флаг защищённости: защищённое никогда не попадает в кандидаты (REQ-004). */
+  protected: boolean;
+};
+
+export type CleanupItemResult =
+  | { path: string; success: true; bytesFreed: number }
+  | { path: string; success: false; bytesFreed: number; error: IpcError };
+
+export type CleanupReport = {
+  /** Per-item записи без скрытия частичных неуспехов; сводка сходится с их суммой. */
+  items: CleanupItemResult[];
+  total: number;
+  succeeded: number;
+  failed: number;
+  freedBytes: number;
+};
 
 // --- Contract maps -------------------------------------------------------------
 
