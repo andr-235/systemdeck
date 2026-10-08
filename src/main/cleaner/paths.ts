@@ -5,12 +5,17 @@ export function normalizeCleanerPath(path: string): string {
   return trimmed.toLowerCase();
 }
 
-/** Путь находится строго под корнем (граница сегмента, не префикс строки). */
-export function isPathUnderRoot(path: string, root: string): boolean {
+/** Путь строго под корнем (сам корень не считается): allow-правила и guard удаления. */
+export function isPathStrictlyUnderRoot(path: string, root: string): boolean {
   const file = normalizeCleanerPath(path);
   const base = normalizeCleanerPath(root);
-  if (file === base) {
+  return file.startsWith(`${base}\\`);
+}
+
+/** Путь под корнем или равен ему (граница сегмента, не префикс строки). */
+export function isPathUnderRoot(path: string, root: string): boolean {
+  if (normalizeCleanerPath(path) === normalizeCleanerPath(root)) {
     return true;
   }
-  return file.startsWith(`${base}\\`);
+  return isPathStrictlyUnderRoot(path, root);
 }

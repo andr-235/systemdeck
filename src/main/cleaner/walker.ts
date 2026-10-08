@@ -58,6 +58,9 @@ async function walkRoot(dirPath: string, fs: CleanerFs, result: CollectResult): 
       );
       if (size !== null) {
         result.entries.push({ path: full, sizeBytes: size });
+      } else {
+        // stat не удался или не файл: помечаем вместо молчаливого пропуска.
+        result.entries.push({ path: full, sizeBytes: 0, inaccessible: true });
       }
     }
   }

@@ -2,7 +2,7 @@
 goal: Движок правил Cleaner и модель безопасности в Main (issue #54)
 version: 1.0
 date_created: 2026-09-23
-last_updated: 2026-09-23
+last_updated: 2026-10-09
 owner: systemdeck-agent
 status: 'Completed'
 tags: [feature, cleaner, epic-5, main, safety]
@@ -60,6 +60,7 @@ tags: [feature, cleaner, epic-5, main, safety]
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
 | TASK-007 | Создать colocated тесты: `rules.test.ts` (allow-корень+паттерн, вне правил не кандидаты), `candidates.test.ts` (защищённый блокирует удаление), `report.test.ts` (сводка сходится, неуспехи видны), `walker.test.ts` (reparse не обходится, inaccessible не абортит), `errors.test.ts` (нет stack в IPC Error); покрывает REQ-007 | ✅        | 2026-09-23 |
 | TASK-008 | Прогнать `npm run check:boundaries`, `npm run typecheck`, `npm run test`; разбить файлы свыше 80 строк; покрывает CON-001, CON-003                                                                                                                                                                                                | ✅        | 2026-09-23 |
+| TASK-010 | Правки после code review PR #61: паттерн thumbnail-cache без якоря `^` на полный путь, строгий матчинг allow-корня (сам корень — не кандидат и не проходит guard), walker помечает файлы с неудачным `stat` как `inaccessible` вместо тихого пропуска; регресс-тесты; покрывает REQ-007                                           | ✅        | 2026-10-09 |
 
 ### Implementation Phase 4
 

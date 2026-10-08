@@ -41,5 +41,10 @@ describe('cleanup candidates', () => {
       allowed: false,
       code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES,
     });
+    const recycleRoot = CLEANER_RULES.find((rule) => rule.category === 'recycle-bin')!.allowRoot;
+    expect(isDeletionAllowed(recycleRoot)).toEqual({
+      allowed: false,
+      code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES,
+    });
   });
 });

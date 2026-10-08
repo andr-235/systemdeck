@@ -1,5 +1,5 @@
 import type { CleanupCategory } from '@shared/ipc/contracts';
-import { isPathUnderRoot, normalizeCleanerPath } from './paths';
+import { isPathStrictlyUnderRoot, normalizeCleanerPath } from './paths';
 import { localAppData, windowsDir } from './systemRoots';
 
 /** Allow-правило: узкий корень + паттерн имени. Оба поля обязательны (REQ-003). */
@@ -9,7 +9,8 @@ export type CleanupRule = {
   pattern: RegExp;
 };
 
-/** Каркас реестра; конкретные корни TEMP/корзины/браузеров — issues #56–#58. */
+/** Каркас реестра; конкретные корни TEMP/корзины/браузеров — issues #56–#58.
+ *  Корень browser-cache пока шире (весь LOCALAPPDATA) — сузить до профилей в #58. */
 export const CLEANER_RULES: readonly CleanupRule[] = [
   {
     category: 'user-temp',
@@ -25,7 +26,7 @@ export const CLEANER_RULES: readonly CleanupRule[] = [
   {
     category: 'thumbnail-cache',
     allowRoot: `${localAppData()}\\Microsoft\\Windows\\Explorer`,
-    pattern: /^thumbcache_.*\.db$/i,
+    pattern: /\\thumbcache_[^\\]*\.db$/i,
   },
   {
     category: 'browser-cache',
@@ -36,7 +37,7 @@ export const CLEANER_RULES: readonly CleanupRule[] = [
 ];
 
 export function matchesCleanupRule(path: string, rule: CleanupRule): boolean {
-  if (!isPathUnderRoot(path, rule.allowRoot)) {
+  if (!isPathStrictlyUnderRoot(path, rule.allowRoot)) {
     return false;
   }
   return rule.pattern.test(normalizeCleanerPath(path));

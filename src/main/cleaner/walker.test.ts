@@ -51,8 +51,11 @@ describe('cleanup walker', () => {
     const collected = await collectCleanupCandidates(['R:\\Temp'], fakeFs());
     expect(collected.entries.map((item) => item.path).sort()).toEqual([
       'R:\\Temp\\a.tmp',
+      'R:\\Temp\\badstat.tmp',
       'R:\\Temp\\sub\\b.tmp',
     ]);
+    const statFailed = collected.entries.find((item) => item.path === 'R:\\Temp\\badstat.tmp');
+    expect(statFailed).toMatchObject({ sizeBytes: 0, inaccessible: true });
     expect(collected.inaccessibleDirs).toEqual(['R:\\Temp\\locked']);
   });
 });

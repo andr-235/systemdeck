@@ -34,4 +34,27 @@ describe('cleaner rules registry', () => {
     const rule = ruleFor('windows-temp');
     expect(matchesCleanupRule(`${rule.allowRoot}2\\junk.tmp`, rule)).toBe(false);
   });
+
+  it('matches thumbcache files under the thumbnail-cache allow root', () => {
+    const rule = ruleFor('thumbnail-cache');
+    expect(matchesCleanupRule(`${rule.allowRoot}\\thumbcache_256.db`, rule)).toBe(true);
+    expect(matchesCleanupRule(`${rule.allowRoot}\\not-a-cache.jpg`, rule)).toBe(false);
+  });
+
+  it('matches etl logs under the log-files allow root', () => {
+    const rule = ruleFor('log-files');
+    expect(matchesCleanupRule(`${rule.allowRoot}\\waasmedic.etl`, rule)).toBe(true);
+    expect(matchesCleanupRule(`${rule.allowRoot}\\installer.evtx`, rule)).toBe(false);
+  });
+
+  it('matches a Cache segment under the browser-cache allow root', () => {
+    const rule = ruleFor('browser-cache');
+    const path = `${rule.allowRoot}\\Chrome\\User Data\\Default\\Cache\\data_0`;
+    expect(matchesCleanupRule(path, rule)).toBe(true);
+  });
+
+  it('never treats an allow root itself as junk', () => {
+    expect(findCleanupRule(ruleFor('recycle-bin').allowRoot)).toBeUndefined();
+    expect(findCleanupRule(ruleFor('user-temp').allowRoot)).toBeUndefined();
+  });
 });
