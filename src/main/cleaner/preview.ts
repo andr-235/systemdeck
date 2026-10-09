@@ -1,9 +1,17 @@
-import type { CleanupCategory, CleanupPreviewSource } from '@shared/ipc/contracts';
+import type {
+  CleanupBrowser,
+  CleanupCacheKind,
+  CleanupCategory,
+  CleanupPreviewSource,
+} from '@shared/ipc/contracts';
+import { EMPTY_BROWSER_DISCOVERY, type BrowserDiscovery } from './browserRoots';
 import { buildCleanupCandidates } from './candidates';
 import { buildRecyclePreview } from './recycleBin';
-import { cleanerRules, rootsForCategory, type CleanupRule } from './rules';
+import { resolveCleanupRules } from './resolveRules';
+import { rootsForCategory, type CleanupRule } from './rules';
 import { nodeRecycleShell, type RecycleShell } from './recycleShell';
-import { buildPreviewSource } from './sourceStatus';
+import { browserSourceStatus, buildPreviewSource } from './sourceStatus';
+import type { Env } from './systemRoots';
 import { collectCleanupCandidates, nodeCleanerFs, type CleanerFs } from './walker';
 
 /** Черновик кандидата: ID присваивает preview-сессия при создании (GUD-001). */
@@ -13,6 +21,10 @@ export type CleanupCandidateDraft = {
   category: CleanupCategory;
   /** Параметры файла на момент превью: удаление сверяет их повторно (issue #56). */
   mtimeMs?: number;
+  /** Метаданные браузерного кэша из обнаружения Main (issue #58). */
+  browser?: CleanupBrowser;
+  profile?: string;
+  cacheKind?: CleanupCacheKind;
 };
 
 export type CleanupPreview = {
@@ -23,6 +35,8 @@ export type CleanupPreview = {
 export type PreviewOptions = {
   now?: number;
   rules?: readonly CleanupRule[];
+  /** Снимок окружения для обнаружения профилей браузеров (в тестах — фейковый, PAT-001). */
+  env?: Env;
   /** Shell-граница корзины: в тестах подменяется фейком (PAT-001). */
   recycleShell?: RecycleShell;
 };
@@ -33,11 +47,17 @@ export async function buildCleanupPreview(
   fs: CleanerFs = nodeCleanerFs,
   options: PreviewOptions = {}
 ): Promise<CleanupPreview> {
-  const rules = options.rules ?? cleanerRules();
+  const resolved =
+    options.rules === undefined
+      ? await resolveCleanupRules(fs, options.env)
+      : { rules: options.rules, browser: EMPTY_BROWSER_DISCOVERY };
+  const rules = resolved.rules;
   const now = options.now ?? Date.now();
   const shell = options.recycleShell ?? nodeRecycleShell;
   const perCategory = await Promise.all(
-    categories.map((category) => collectCategory(category, { fs, rules, now, shell }))
+    categories.map((category) =>
+      collectCategory(category, { fs, rules, now, shell, browser: resolved.browser })
+    )
   );
   return {
     candidates: perCategory.flatMap((part) => part.candidates),
@@ -50,6 +70,7 @@ type CollectContext = {
   rules: readonly CleanupRule[];
   now: number;
   shell: RecycleShell;
+  browser: BrowserDiscovery;
 };
 
 /** Источник черновика: и файловый кандидат, и агрегат корзины сводятся к одному виду. */
@@ -58,6 +79,9 @@ type DraftSource = {
   sizeBytes: number;
   category: CleanupCategory;
   mtimeMs?: number;
+  browser?: CleanupBrowser;
+  profile?: string;
+  cacheKind?: CleanupCacheKind;
 };
 
 async function collectCategory(
@@ -78,9 +102,26 @@ async function collectCategory(
   const candidates: CleanupCandidateDraft[] = built.candidates
     .filter((candidate) => candidate.category === category)
     .map(toDraft);
+  // browser-cache различает «браузер/профиль не найден» (empty) и «нет доступа» (issue #58).
+  const status =
+    category === 'browser-cache'
+      ? browserSourceStatus({
+          roots,
+          collected,
+          candidateCount: candidates.length,
+          discovery: context.browser,
+        })
+      : undefined;
   return {
     candidates,
-    source: buildPreviewSource({ category, rules: context.rules, roots, collected, candidates }),
+    source: buildPreviewSource({
+      category,
+      rules: context.rules,
+      roots,
+      collected,
+      candidates,
+      ...(status === undefined ? {} : { status }),
+    }),
   };
 }
 
@@ -90,5 +131,8 @@ function toDraft(candidate: DraftSource): CleanupCandidateDraft {
     sizeBytes: candidate.sizeBytes,
     category: candidate.category,
     ...(candidate.mtimeMs === undefined ? {} : { mtimeMs: candidate.mtimeMs }),
+    ...(candidate.browser === undefined
+      ? {}
+      : { browser: candidate.browser, profile: candidate.profile, cacheKind: candidate.cacheKind }),
   };
 }

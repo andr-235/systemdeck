@@ -252,6 +252,12 @@ export type ScanProgressEvent =
 export type CleanupCategory =
   'user-temp' | 'windows-temp' | 'recycle-bin' | 'thumbnail-cache' | 'browser-cache' | 'log-files';
 
+/** Браузер, чей профиль обнаружен в Main (issue #58); Renderer классификацию не выполняет. */
+export type CleanupBrowser = 'chrome' | 'edge' | 'firefox';
+
+/** Каталог кэша внутри подтверждённого профиля: единственный allow-корень категории. */
+export type CleanupCacheKind = 'Cache' | 'Code Cache' | 'GPUCache' | 'cache2';
+
 export type CleanupCandidate = {
   path: string;
   sizeBytes: number;
@@ -260,6 +266,10 @@ export type CleanupCandidate = {
   protected: boolean;
   /** Epoch-ms изменения файла; отсутствует, если stat не удался (issue #56). */
   mtimeMs?: number;
+  /** Метаданные браузерного кэша: заполнены только у категории browser-cache (issue #58). */
+  browser?: CleanupBrowser;
+  profile?: string;
+  cacheKind?: CleanupCacheKind;
 };
 
 /** Исход удаления одного кандидата: успех, пропуск на валидации или ошибка. */
@@ -291,6 +301,10 @@ export type CleanupPreviewCandidate = {
   category: CleanupCategory;
   /** Параметры файла на момент превью: удаление сверяет их повторно (issue #56). */
   mtimeMs?: number;
+  /** Браузер, профиль и вид кэша — из обнаружения Main, не из данных Renderer (issue #58). */
+  browser?: CleanupBrowser;
+  profile?: string;
+  cacheKind?: CleanupCacheKind;
 };
 
 /** Статус источника (allow-корней одной категории) в ответе preview. */

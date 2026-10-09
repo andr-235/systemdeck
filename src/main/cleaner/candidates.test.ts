@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { buildCleanupCandidates, isDeletionAllowed } from './candidates';
-import { cleanerRules, fileRuleFor } from './rules';
+import { cleanerRules, fileRuleFor, type CleanupRule } from './rules';
 import { windowsDir } from './systemRoots';
 import type { CleanupCategory } from '@shared/ipc/contracts';
 
@@ -90,5 +90,49 @@ describe('cleanup candidates', () => {
     ]);
     expect(built.candidates).toHaveLength(0);
     expect(built.skippedOutsideRules).toBe(1);
+  });
+
+  it('carries browser profile metadata from the rule and keeps forbidden paths out', () => {
+    const cacheRoot = 'C:\\Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache';
+    const profile = 'C:\\Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default';
+    const rules: CleanupRule[] = [
+      {
+        kind: 'file',
+        category: 'browser-cache',
+        allowRoot: cacheRoot,
+        browser: 'chrome',
+        profile: 'Default',
+        cacheKind: 'Cache',
+      },
+    ];
+    const built = buildCleanupCandidates(
+      [
+        { path: `${cacheRoot}\\data_0`, sizeBytes: 5, mtimeMs: OLD_MTIME },
+        { path: `${profile}\\Cookies`, sizeBytes: 6, mtimeMs: OLD_MTIME },
+        {
+          path: `${profile}\\Local Storage\\leveldb\\000003.ldb`,
+          sizeBytes: 7,
+          mtimeMs: OLD_MTIME,
+        },
+      ],
+      { rules }
+    );
+    expect(built.candidates).toEqual([
+      {
+        path: `${cacheRoot}\\data_0`,
+        sizeBytes: 5,
+        category: 'browser-cache',
+        protected: false,
+        mtimeMs: OLD_MTIME,
+        browser: 'chrome',
+        profile: 'Default',
+        cacheKind: 'Cache',
+      },
+    ]);
+    expect(built.skippedOutsideRules).toBe(2);
+    expect(isDeletionAllowed(`${profile}\\Cookies`, rules)).toEqual({
+      allowed: false,
+      code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES,
+    });
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CleanupPreviewCandidate } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { runCleanup, type CleanerDeleteFs } from './deleter';
-import { cleanerRules, fileRuleFor } from './rules';
+import { cleanerRules, fileRuleFor, type CleanupRule } from './rules';
 import type { RecycleShell } from './recycleShell';
 import { windowsDir } from './systemRoots';
 
@@ -187,6 +187,56 @@ describe('cleanup deleter', () => {
       code: IPC_ERROR_CODES.CLEAN_FILE_IN_USE,
     });
     expect(items[1]).toEqual({ path: freePath, outcome: 'deleted', bytesFreed: 4 });
+    expect(unlinked).toEqual([freePath]);
+  });
+
+  it('keeps a busy or relinked browser cache file out of the run without aborting it', async () => {
+    const cacheRoot = 'C:\\Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache';
+    const rules: CleanupRule[] = [
+      {
+        kind: 'file',
+        category: 'browser-cache',
+        allowRoot: cacheRoot,
+        browser: 'chrome',
+        profile: 'Default',
+        cacheKind: 'Cache',
+      },
+    ];
+    const busyPath = `${cacheRoot}\\data_0`;
+    const linkPath = `${cacheRoot}\\f_1`;
+    const freePath = `${cacheRoot}\\f_2`;
+    const browserCandidate = (path: string, sizeBytes: number): CleanupPreviewCandidate => ({
+      id: 'b',
+      path,
+      sizeBytes,
+      category: 'browser-cache',
+      mtimeMs: PREVIEW_MTIME,
+    });
+    const { fs, unlinked } = deleteFsStub(
+      {
+        [busyPath]: { size: 3 },
+        [linkPath]: { size: 4, symlink: true },
+        [freePath]: { size: 5 },
+      },
+      { [busyPath]: 'EBUSY' }
+    );
+    const items = await runCleanup(
+      [browserCandidate(busyPath, 3), browserCandidate(linkPath, 4), browserCandidate(freePath, 5)],
+      { fs, isCancelled: () => false, rules }
+    );
+    expect(items[0]).toEqual({
+      path: busyPath,
+      outcome: 'skipped',
+      bytesFreed: 0,
+      code: IPC_ERROR_CODES.CLEAN_FILE_IN_USE,
+    });
+    expect(items[1]).toEqual({
+      path: linkPath,
+      outcome: 'skipped',
+      bytesFreed: 0,
+      code: IPC_ERROR_CODES.CLEAN_ENTRY_INVALID,
+    });
+    expect(items[2]).toEqual({ path: freePath, outcome: 'deleted', bytesFreed: 5 });
     expect(unlinked).toEqual([freePath]);
   });
 

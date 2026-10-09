@@ -89,6 +89,10 @@ export function buildCleanupCandidates(
       category: rule.category,
       protected: false,
       ...(typeof entry.mtimeMs === 'number' ? { mtimeMs: entry.mtimeMs } : {}),
+      // Метаданные браузерного профиля идут из правила Main, а не вычисляется в Renderer.
+      ...(rule.browser === undefined
+        ? {}
+        : { browser: rule.browser, profile: rule.profile, cacheKind: rule.cacheKind }),
     });
   }
   return result;

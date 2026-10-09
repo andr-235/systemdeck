@@ -14,9 +14,10 @@ import { buildCleanupPreview } from './preview';
 import { PreviewSessionStore, type PreviewSession } from './previewSession';
 import { CleanupProgressEmitter } from './progress';
 import { buildCleanupReport } from './report';
-import { cleanerRules } from './rules';
+import { resolveCleanupRules } from './resolveRules';
+import type { CleanupRule } from './rules';
 import type { RecycleShell } from './recycleShell';
-import type { CleanerFs } from './walker';
+import { nodeCleanerFs, type CleanerFs } from './walker';
 
 const logger = getLogger('cleaner');
 
@@ -85,7 +86,10 @@ export class CleanerManager {
   }
 
   /** Старт удаления: только sessionId + ID кандидатов, raw path отсутствует (SEC-001). */
-  startDelete(request: { sessionId: string; candidateIds: string[] }): { operationId: string } {
+  async startDelete(request: {
+    sessionId: string;
+    candidateIds: string[];
+  }): Promise<{ operationId: string }> {
     this.assertNoActive('Операция очистки уже выполняется');
     const session = this.sessions.getActive(request.sessionId);
     if (!session) {
@@ -95,7 +99,11 @@ export class CleanerManager {
       );
     }
     const selected = this.resolveSelected(session, request.candidateIds);
-    const rules = cleanerRules();
+    // Свежие правила с повторным обнаружением профилей: Main перепроверяет allow-правило
+    // по актуальному состоянию ФС, а не по данным превью (issue #58).
+    const { rules } = await resolveCleanupRules(this.previewFs ?? nodeCleanerFs);
+    // Пока выполнялось обнаружение, операция могла стартовать из другого вызова.
+    this.assertNoActive('Операция очистки уже выполняется');
     for (const candidate of selected) {
       const verdict = isDeletionAllowed(candidate.path, rules);
       if (!verdict.allowed) {
@@ -105,7 +113,7 @@ export class CleanerManager {
     const operationId = this.randomId();
     const active: ActiveOperation = { operationId, sessionId: session.id, cancelled: false };
     this.active = active;
-    void this.runOperation(active, selected);
+    void this.runOperation(active, selected, rules);
     return { operationId };
   }
 
@@ -158,7 +166,8 @@ export class CleanerManager {
 
   private async runOperation(
     active: ActiveOperation,
-    selected: CleanupPreviewCandidate[]
+    selected: CleanupPreviewCandidate[],
+    rules: readonly CleanupRule[]
   ): Promise<void> {
     const total = selected.length;
     const items: CleanupItemResult[] = [];
@@ -187,6 +196,7 @@ export class CleanerManager {
         isCancelled: () => active.cancelled,
         fs: this.deleteFs,
         recycleShell: this.recycleShell,
+        rules,
         onItem: (item, processed, freed) => {
           items.push(item);
           freedBytes = freed;

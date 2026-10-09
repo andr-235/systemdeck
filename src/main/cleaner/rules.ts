@@ -1,4 +1,4 @@
-import type { CleanupCategory } from '@shared/ipc/contracts';
+import type { CleanupBrowser, CleanupCacheKind, CleanupCategory } from '@shared/ipc/contracts';
 import { getLogDirPath } from '../logger';
 import { dedupeRoots, isPathStrictlyUnderRoot, normalizeCleanerPath } from './paths';
 import { localAppDataDir, type Env } from './systemRoots';
@@ -21,9 +21,17 @@ export type CleanupFileRule = {
   kind: 'file';
   category: CleanupCategory;
   allowRoot: string;
-  pattern: RegExp;
+  /**
+   * Паттерн имени файла; отсутствует — любое содержимое строго под allow-корнем.
+   * Так строятся только узкие каталоги кэшей браузеров (issue #58).
+   */
+  pattern?: RegExp;
   /** Минимальный возраст файла в часах; не задан — возраст не проверяется (issue #56). */
   minAgeHours?: number;
+  /** Метаданные браузерного профиля: заполнены только у правил browser-cache (issue #58). */
+  browser?: CleanupBrowser;
+  profile?: string;
+  cacheKind?: CleanupCacheKind;
 };
 
 /**
@@ -64,7 +72,11 @@ function tempRules(category: CleanupCategory, roots: readonly string[]): Cleanup
   );
 }
 
-/** Реестр правил из снимка окружения: сломанная переменная не даёт allow-корня (issue #56). */
+/**
+ * Статический реестр правил из снимка окружения: сломанная переменная не даёт allow-корня
+ * (issue #56). Правила browser-cache в него не входят — они строятся только из обнаружения
+ * профилей браузеров (issue #58, `resolveCleanupRules`).
+ */
 export function cleanerRules(
   env: Env = process.env,
   logDir: string | null = getLogDirPath()
@@ -80,7 +92,6 @@ export function cleanerRules(
       local === null ? null : `${local}\\Microsoft\\Windows\\Explorer`,
       /\\thumbcache_[^\\]*\.db$/i
     ),
-    ...fileRule('browser-cache', local, /\\(Cache|Code Cache|GPUCache)\\/i),
     ...fileRule('log-files', logDir, ROTATED_LOG_PATTERN, LOG_MIN_AGE_HOURS),
   ];
 }
@@ -92,7 +103,7 @@ export function matchesCleanupRule(path: string, rule: CleanupRule): boolean {
   if (!isPathStrictlyUnderRoot(path, rule.allowRoot)) {
     return false;
   }
-  return rule.pattern.test(normalizeCleanerPath(path));
+  return rule.pattern === undefined || rule.pattern.test(normalizeCleanerPath(path));
 }
 
 /** Правило для пути любого типа: файловые корни и агрегат корзины (guard удаления). */
