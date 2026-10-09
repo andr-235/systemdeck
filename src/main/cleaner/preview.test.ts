@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type { CleanupCategory } from '@shared/ipc/contracts';
 import { buildCleanupPreview } from './preview';
-import { cleanerRules, TEMP_MIN_AGE_HOURS } from './rules';
+import { cleanerRules, fileRuleFor, TEMP_MIN_AGE_HOURS } from './rules';
 import type { CleanupRule } from './rules';
+import type { RecycleShell, RecycleVolumeState } from './recycleShell';
 import type { CleanerDirEntry, CleanerFs } from './walker';
 
 const OLD_MTIME = Date.now() - 48 * 3_600_000;
@@ -16,10 +18,29 @@ function entry(name: string, kind: 'file' | 'dir'): CleanerDirEntry {
   };
 }
 
-function ruleRoot(category: string): string {
-  const rule = cleanerRules().find((candidate) => candidate.category === category);
+function ruleRoot(category: CleanupCategory): string {
+  const rule = fileRuleFor(category, cleanerRules());
   expect(rule, category).toBeDefined();
   return rule!.allowRoot;
+}
+
+/** Фейковый Shell корзины: tomState по корням томов, listError — отказ перечня томов. */
+function fakeRecycleShell(
+  volumeStates: Record<string, RecycleVolumeState>,
+  volumes: string[] = Object.keys(volumeStates),
+  listError?: string
+): RecycleShell {
+  return {
+    listVolumes: async () => {
+      if (listError !== undefined) {
+        throw new Error(listError);
+      }
+      return volumes;
+    },
+    query: async (volumeRoot) =>
+      volumeStates[volumeRoot] ?? { ok: false, reason: 'нет данных по тому' },
+    clear: async () => undefined,
+  };
 }
 
 /** Фейковая ФС: tree — каталоги, sizes — размеры файлов, locked — недоступные каталоги. */
@@ -51,7 +72,6 @@ function fakeFs(
 describe('cleanup preview', () => {
   it('builds candidates and source statuses for the requested categories only', async () => {
     const userRoot = ruleRoot('user-temp');
-    const recycleRoot = ruleRoot('recycle-bin');
     const fs = fakeFs(
       {
         [userRoot]: [
@@ -60,7 +80,6 @@ describe('cleanup preview', () => {
           ['skip.dat', 'file'],
         ],
         [`${userRoot}\\sub`]: [['b.tmp', 'file']],
-        [recycleRoot]: [],
       },
       {
         [`${userRoot}\\a.tmp`]: 10,
@@ -68,7 +87,10 @@ describe('cleanup preview', () => {
         [`${userRoot}\\sub\\b.tmp`]: 20,
       }
     );
-    const preview = await buildCleanupPreview(['user-temp', 'recycle-bin'], fs);
+    const recycleShell = fakeRecycleShell({ 'C:\\': { ok: true, sizeBytes: 0, itemCount: 0 } });
+    const preview = await buildCleanupPreview(['user-temp', 'recycle-bin'], fs, {
+      recycleShell,
+    });
     expect(preview.candidates.map((c) => c.path).sort()).toEqual([
       `${userRoot}\\a.tmp`,
       `${userRoot}\\sub\\b.tmp`,
@@ -92,6 +114,62 @@ describe('cleanup preview', () => {
         inaccessibleDirectories: 0,
       },
     ]);
+  });
+
+  it('builds one aggregate recycle candidate per volume without walking the fs', async () => {
+    const fs: CleanerFs = {
+      readdir: async () => {
+        throw new Error("корзина не должна обходаться walker'ом");
+      },
+      stat: async () => {
+        throw new Error("корзина не должна обходаться walker'ом");
+      },
+    };
+    const recycleShell = fakeRecycleShell({
+      'C:\\': { ok: true, sizeBytes: 500, itemCount: 3 },
+      'D:\\': { ok: true, sizeBytes: 0, itemCount: 0 },
+    });
+    const preview = await buildCleanupPreview(['recycle-bin'], fs, { recycleShell });
+    expect(preview.candidates).toEqual([
+      { path: 'C:\\$Recycle.Bin', sizeBytes: 500, category: 'recycle-bin' },
+    ]);
+    expect(preview.sources[0]).toMatchObject({
+      category: 'recycle-bin',
+      status: 'ok',
+      candidateCount: 1,
+      estimatedBytes: 500,
+      inaccessibleDirectories: 0,
+    });
+    expect(preview.sources[0].minAgeHours).toBeUndefined();
+  });
+
+  it('marks the recycle source unavailable when the shell is missing', async () => {
+    const fs = fakeFs({}, {});
+    const preview = await buildCleanupPreview(['recycle-bin'], fs, {
+      recycleShell: fakeRecycleShell({}, [], 'PowerShell недоступен'),
+    });
+    expect(preview.candidates).toHaveLength(0);
+    expect(preview.sources[0]).toMatchObject({
+      category: 'recycle-bin',
+      status: 'unavailable',
+      candidateCount: 0,
+      estimatedBytes: 0,
+    });
+    expect(preview.sources[0].reason).toContain('Корзина недоступна');
+    expect(preview.sources[0].reason).toContain('PowerShell недоступен');
+  });
+
+  it('keeps a volume with a failed measurement out of the candidates as partial', async () => {
+    const recycleShell = fakeRecycleShell({
+      'C:\\': { ok: true, sizeBytes: 700, itemCount: 2 },
+      'D:\\': { ok: false, reason: 'Shell отклонил запрос корзины тома' },
+    });
+    const preview = await buildCleanupPreview(['recycle-bin'], fakeFs({}, {}), { recycleShell });
+    expect(preview.candidates).toEqual([
+      { path: 'C:\\$Recycle.Bin', sizeBytes: 700, category: 'recycle-bin' },
+    ]);
+    expect(preview.sources[0]).toMatchObject({ status: 'partial', candidateCount: 1 });
+    expect(preview.sources[0].reason).toContain('D:');
   });
 
   it('does not attribute candidates of a foreign category to the walked source', async () => {
@@ -172,9 +250,14 @@ describe('cleanup preview', () => {
 
   it('deduplicates overlapping allow roots so a file is never reported twice', async () => {
     const rules: CleanupRule[] = [
-      { category: 'user-temp', allowRoot: 'C:\\Sandbox\\Temp', pattern: /./ },
-      { category: 'user-temp', allowRoot: 'C:\\Sandbox\\Temp\\nested', pattern: /./ },
-      { category: 'user-temp', allowRoot: 'c:/sandbox/temp', pattern: /./ },
+      { kind: 'file', category: 'user-temp', allowRoot: 'C:\\Sandbox\\Temp', pattern: /./ },
+      {
+        kind: 'file',
+        category: 'user-temp',
+        allowRoot: 'C:\\Sandbox\\Temp\\nested',
+        pattern: /./,
+      },
+      { kind: 'file', category: 'user-temp', allowRoot: 'c:/sandbox/temp', pattern: /./ },
     ];
     const fs = fakeFs(
       {

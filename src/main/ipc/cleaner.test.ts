@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '@shared/ipc/channels';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
-import { cleanerRules } from '../cleaner/rules';
+import { cleanerRules, fileRuleFor } from '../cleaner/rules';
 import { CleanerManager } from '../cleaner/CleanerManager';
 import type { CleanerDirEntry, CleanerFs } from '../cleaner/walker';
 import {
@@ -19,7 +19,7 @@ vi.mock('electron', () => ({
   },
 }));
 
-const userRoot = cleanerRules().find((rule) => rule.category === 'user-temp')!.allowRoot;
+const userRoot = fileRuleFor('user-temp', cleanerRules())!.allowRoot;
 const PREVIEW_MTIME = 1_700_000_000_000;
 
 function fileEntry(name: string): CleanerDirEntry {

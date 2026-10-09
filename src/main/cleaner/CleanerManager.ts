@@ -15,6 +15,7 @@ import { PreviewSessionStore, type PreviewSession } from './previewSession';
 import { CleanupProgressEmitter } from './progress';
 import { buildCleanupReport } from './report';
 import { cleanerRules } from './rules';
+import type { RecycleShell } from './recycleShell';
 import type { CleanerFs } from './walker';
 
 const logger = getLogger('cleaner');
@@ -27,9 +28,10 @@ export type CleanerManagerDeps = {
   now?: () => number;
   randomId?: () => string;
   sessionTtlMs?: number;
-  /** Инжекции границ ФС для тестов. */
+  /** Инжекции границ ФС и Shell для тестов. */
   previewFs?: CleanerFs;
   deleteFs?: CleanerDeleteFs;
+  recycleShell?: RecycleShell;
 };
 
 function cleanerError(code: string, message: string): Error {
@@ -42,6 +44,7 @@ export class CleanerManager {
   private readonly emitter: CleanupProgressEmitter;
   private readonly previewFs: CleanerFs | undefined;
   private readonly deleteFs: CleanerDeleteFs | undefined;
+  private readonly recycleShell: RecycleShell | undefined;
   private readonly randomId: () => string;
   private active: ActiveOperation | null = null;
 
@@ -62,6 +65,7 @@ export class CleanerManager {
     });
     this.previewFs = deps.previewFs;
     this.deleteFs = deps.deleteFs;
+    this.recycleShell = deps.recycleShell;
     this.randomId = deps.randomId ?? randomUUID;
   }
 
@@ -72,7 +76,9 @@ export class CleanerManager {
   /** Превью по категориям; во время удаления отклоняется (REQ-005). */
   async preview(categories: readonly CleanupCategory[]): Promise<CleanerPreviewResponse> {
     this.assertNoActive('Операция очистки уже выполняется');
-    const { candidates, sources } = await buildCleanupPreview(categories, this.previewFs);
+    const { candidates, sources } = await buildCleanupPreview(categories, this.previewFs, {
+      recycleShell: this.recycleShell,
+    });
     // Превью собиралось долго: если удаление стартовало за это время — сессию не создаём.
     this.assertNoActive('Операция очистки уже выполняется');
     return this.sessions.create(candidates, sources);
@@ -180,6 +186,7 @@ export class CleanerManager {
       await runCleanup(selected, {
         isCancelled: () => active.cancelled,
         fs: this.deleteFs,
+        recycleShell: this.recycleShell,
         onItem: (item, processed, freed) => {
           items.push(item);
           freedBytes = freed;

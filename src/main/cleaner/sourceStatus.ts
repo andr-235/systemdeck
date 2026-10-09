@@ -23,6 +23,9 @@ export function missingRootsReason(category: CleanupCategory): string {
   if (category === 'user-temp') {
     return 'Каталог TEMP не определён: переменная %LOCALAPPDATA% пуста или повреждена';
   }
+  if (category === 'log-files') {
+    return 'Каталог логов SystemDeck не определён: Application Log не инициализирован';
+  }
   return 'Источник не настроен';
 }
 

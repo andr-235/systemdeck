@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CleanupPreviewCandidate } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { runCleanup, type CleanerDeleteFs } from './deleter';
-import { cleanerRules } from './rules';
+import { cleanerRules, fileRuleFor } from './rules';
+import type { RecycleShell } from './recycleShell';
 import { windowsDir } from './systemRoots';
 
-const userRoot = cleanerRules().find((rule) => rule.category === 'user-temp')!.allowRoot;
+const userRoot = fileRuleFor('user-temp', cleanerRules())!.allowRoot;
 const PREVIEW_MTIME = 1_700_000_000_000;
 
 function candidate(path: string, sizeBytes = 1): CleanupPreviewCandidate {
@@ -40,7 +41,7 @@ function deleteFsStub(
       unlink: async (path) => {
         const error = unlinkErrors[path];
         if (error) {
-          throw new Error(error);
+          throw Object.assign(new Error(error), { code: error });
         }
         unlinked.push(path);
       },
@@ -165,5 +166,78 @@ describe('cleanup deleter', () => {
     const onItem = vi.fn();
     await runCleanup([candidate(path, 5)], { fs, isCancelled: () => false, onItem });
     expect(onItem).toHaveBeenCalledWith({ path, outcome: 'deleted', bytesFreed: 5 }, 1, 5);
+  });
+
+  it('skips a busy file as in-use without aborting the rest of the run', async () => {
+    const thumbRoot = fileRuleFor('thumbnail-cache', cleanerRules())!.allowRoot;
+    const busyPath = `${thumbRoot}\\thumbcache_96.db`;
+    const freePath = `${thumbRoot}\\thumbcache_256.db`;
+    const { fs, unlinked } = deleteFsStub(
+      { [busyPath]: { size: 3 }, [freePath]: { size: 4 } },
+      { [busyPath]: 'EBUSY' }
+    );
+    const items = await runCleanup([candidate(busyPath, 3), candidate(freePath, 4)], {
+      fs,
+      isCancelled: () => false,
+    });
+    expect(items[0]).toEqual({
+      path: busyPath,
+      outcome: 'skipped',
+      bytesFreed: 0,
+      code: IPC_ERROR_CODES.CLEAN_FILE_IN_USE,
+    });
+    expect(items[1]).toEqual({ path: freePath, outcome: 'deleted', bytesFreed: 4 });
+    expect(unlinked).toEqual([freePath]);
+  });
+
+  it('clears a recycle candidate through the shell without touching the fs', async () => {
+    const recyclePath = 'C:\\$Recycle.Bin';
+    const { fs, unlinked, lstatCalls } = deleteFsStub({});
+    const queried: string[] = [];
+    const cleared: string[] = [];
+    let emptied = false;
+    const recycleShell: RecycleShell = {
+      listVolumes: async () => ['C:\\'],
+      query: async (root) => {
+        queried.push(root);
+        return emptied
+          ? { ok: true, sizeBytes: 0, itemCount: 0 }
+          : { ok: true, sizeBytes: 120, itemCount: 2 };
+      },
+      clear: async (root) => {
+        cleared.push(root);
+        emptied = true;
+      },
+    };
+    const items = await runCleanup(
+      [{ id: 'c1', path: recyclePath, sizeBytes: 120, category: 'recycle-bin' }],
+      { fs, isCancelled: () => false, recycleShell }
+    );
+    expect(items).toEqual([{ path: recyclePath, outcome: 'deleted', bytesFreed: 120 }]);
+    expect(cleared).toEqual(['C:\\']);
+    expect(queried).toEqual(['C:\\', 'C:\\']);
+    expect(lstatCalls).toEqual([]);
+    expect(unlinked).toEqual([]);
+  });
+
+  it('fails a recycle candidate when the shell cannot measure the volume', async () => {
+    const recyclePath = 'D:\\$Recycle.Bin';
+    const { fs, unlinked } = deleteFsStub({});
+    const recycleShell: RecycleShell = {
+      listVolumes: async () => ['D:\\'],
+      query: async () => ({ ok: false, reason: 'Shell недоступен' }),
+      clear: async () => {
+        throw new Error('очистка не должна вызываться');
+      },
+    };
+    const items = await runCleanup(
+      [{ id: 'c1', path: recyclePath, sizeBytes: 10, category: 'recycle-bin' }],
+      { fs, isCancelled: () => false, recycleShell }
+    );
+    expect(items[0]).toMatchObject({ outcome: 'failed', bytesFreed: 0 });
+    if (items[0].outcome === 'failed') {
+      expect(items[0].error.code).toBe(IPC_ERROR_CODES.CLEAN_SHELL_UNAVAILABLE);
+    }
+    expect(unlinked).toEqual([]);
   });
 });

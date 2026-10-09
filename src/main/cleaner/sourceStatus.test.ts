@@ -14,7 +14,9 @@ describe('cleanup source status', () => {
       reason: missingRootsReason('windows-temp'),
     });
     expect(resolveSourceStatus('user-temp', 0, collected(), 0).reason).toContain('%LOCALAPPDATA%');
-    expect(resolveSourceStatus('log-files', 0, collected(), 0).reason).toBe('Источник не настроен');
+    expect(resolveSourceStatus('log-files', 0, collected(), 0).reason).toBe(
+      'Каталог логов SystemDeck не определён: Application Log не инициализирован'
+    );
   });
 
   it('explains an unreadable root by the missing admin rights', () => {

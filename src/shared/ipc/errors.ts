@@ -17,6 +17,12 @@ export const IPC_ERROR_CODES = {
   CLEAN_EMPTY_SELECTION: 'CLEAN_EMPTY_SELECTION',
   /** Запись изменилась после preview: исчезла, стала ссылкой или не файл. */
   CLEAN_ENTRY_INVALID: 'CLEAN_ENTRY_INVALID',
+  /** Shell-механизм корзины недоступен: нет PowerShell, прав или сбой запроса (issue #57). */
+  CLEAN_SHELL_UNAVAILABLE: 'CLEAN_SHELL_UNAVAILABLE',
+  /** Файл занят другим процессом: пропуск, без ошибки и автоперезапуска (issue #57). */
+  CLEAN_FILE_IN_USE: 'CLEAN_FILE_IN_USE',
+  /** Операция выполнена, но фактический размер не подтверждён — без оценочных байтов. */
+  CLEAN_SIZE_UNVERIFIED: 'CLEAN_SIZE_UNVERIFIED',
 } as const;
 
 export type IpcErrorCode = (typeof IPC_ERROR_CODES)[keyof typeof IPC_ERROR_CODES];

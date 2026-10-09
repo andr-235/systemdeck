@@ -3,7 +3,9 @@ import type { CleanupItemResult, CleanupPreviewCandidate } from '@shared/ipc/con
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { toCleanupIpcError } from './errors';
 import { isDeletionAllowed } from './candidates';
-import { cleanerRules, type CleanupRule } from './rules';
+import { clearRecycleVolume } from './recycleBin';
+import { cleanerRules, findCleanupRule, type CleanupRule } from './rules';
+import { nodeRecycleShell, type RecycleShell } from './recycleShell';
 
 /** Граница ФС удаления: node-fs по умолчанию, fake для тестов (прецедент ScanFs). */
 export interface CleanerDeleteFs {
@@ -35,6 +37,8 @@ export type RunCleanupDeps = {
   isCancelled: () => boolean;
   fs?: CleanerDeleteFs;
   rules?: readonly CleanupRule[];
+  /** Shell-граница корзины: очистка выбранного тома только через неё (issue #57). */
+  recycleShell?: RecycleShell;
   /** Вызывается после каждого обработанного элемента: накопление отчёта и прогресс. */
   onItem?: (item: CleanupItemResult, processed: number, freedBytes: number) => void;
 };
@@ -46,13 +50,14 @@ export async function runCleanup(
 ): Promise<CleanupItemResult[]> {
   const fs = deps.fs ?? nodeCleanerDeleteFs;
   const rules = deps.rules ?? cleanerRules();
+  const shell = deps.recycleShell ?? nodeRecycleShell;
   const items: CleanupItemResult[] = [];
   let freedBytes = 0;
   for (const candidate of selected) {
     if (deps.isCancelled()) {
       break;
     }
-    const item = await deleteOne(candidate, fs, rules);
+    const item = await deleteOne(candidate, fs, rules, shell);
     items.push(item);
     if (item.outcome === 'deleted') {
       freedBytes += item.bytesFreed;
@@ -76,12 +81,17 @@ function matchesPreview(
 async function deleteOne(
   candidate: CleanupPreviewCandidate,
   fs: CleanerDeleteFs,
-  rules: readonly CleanupRule[]
+  rules: readonly CleanupRule[],
+  shell: RecycleShell
 ): Promise<CleanupItemResult> {
   const path = candidate.path;
   const verdict = isDeletionAllowed(path, rules);
   if (!verdict.allowed) {
     return { path, outcome: 'skipped', bytesFreed: 0, code: verdict.code };
+  }
+  // Корзина очищается только Shell-механизмом и только выбранного тома (issue #57).
+  if (findCleanupRule(path, rules)?.kind === 'recycle-volume') {
+    return clearRecycleVolume(path, shell);
   }
   let info: Awaited<ReturnType<CleanerDeleteFs['lstat']>>;
   try {
@@ -96,7 +106,16 @@ async function deleteOne(
   try {
     await fs.unlink(path);
   } catch (error) {
+    // Занятый файл (thumbcache открыт Explorer'ом) — пропуск, без ошибки и перезапуска.
+    if (errorCode(error) === 'EBUSY') {
+      return { path, outcome: 'skipped', bytesFreed: 0, code: IPC_ERROR_CODES.CLEAN_FILE_IN_USE };
+    }
     return { path, outcome: 'failed', bytesFreed: 0, error: toCleanupIpcError(error) };
   }
   return { path, outcome: 'deleted', bytesFreed: info.size };
+}
+
+function errorCode(error: unknown): string | undefined {
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
 }

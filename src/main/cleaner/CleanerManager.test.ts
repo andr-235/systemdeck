@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CleanupProgressEvent, CleanerPreviewResponse } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { CLEANUP_SESSION_TTL_MS } from './previewSession';
-import { cleanerRules } from './rules';
+import { cleanerRules, fileRuleFor } from './rules';
 import type { CleanerDeleteFs } from './deleter';
 import type { CleanerDirEntry, CleanerFs } from './walker';
 
@@ -14,7 +14,7 @@ vi.mock('./candidates', async (importOriginal) => {
 import { isDeletionAllowed } from './candidates';
 import { CleanerManager } from './CleanerManager';
 
-const userRoot = cleanerRules().find((rule) => rule.category === 'user-temp')!.allowRoot;
+const userRoot = fileRuleFor('user-temp', cleanerRules())!.allowRoot;
 const aPath = `${userRoot}\\a.tmp`;
 const bPath = `${userRoot}\\b.tmp`;
 /** Общий mtime превью и удаления: параметры должны совпасть, иначе элемент пропускается. */
