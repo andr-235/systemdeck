@@ -61,7 +61,11 @@ export class ScanManager {
         this.send({ status: 'cancelled', volumeId });
       } else {
         logger.error('storage scan failed', { volumeId, error });
-        this.send({ status: 'failed', volumeId, message: error instanceof Error ? error.message : String(error) });
+        this.send({
+          status: 'failed',
+          volumeId,
+          message: error instanceof Error ? error.message : String(error),
+        });
         throw error;
       }
     }
@@ -77,7 +81,15 @@ export class ScanManager {
     active.cancelled = true;
   }
 
-  private emitScanning(volumeId: string, progress: { scannedEntries: number; scannedBytes: number; inaccessibleDirectories: number; currentPath: string }): void {
+  private emitScanning(
+    volumeId: string,
+    progress: {
+      scannedEntries: number;
+      scannedBytes: number;
+      inaccessibleDirectories: number;
+      currentPath: string;
+    }
+  ): void {
     const now = performance.now();
     if (now - this.lastProgressAt < this.throttleMs) {
       return;

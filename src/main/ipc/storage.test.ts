@@ -68,10 +68,7 @@ describe('Main IPC — storage scan (node project)', () => {
   it('startScan rejects malformed volume ids with VALIDATION_FAILED', async () => {
     const start = createScanStartHandler(makeManager());
     for (const bad of ['C', 'C:\\', 'CC:', '1:', '', null, undefined, 5]) {
-      const result = await start(
-        {} as Electron.IpcMainInvokeEvent,
-        { volumeId: bad } as never
-      );
+      const result = await start({} as Electron.IpcMainInvokeEvent, { volumeId: bad } as never);
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.code).toBe(IPC_ERROR_CODES.VALIDATION_FAILED);
     }

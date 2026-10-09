@@ -184,9 +184,7 @@ describe('Renderer — StoragePage (jsdom project)', () => {
     expect(screen.getByTestId('storage-treemap')).toBeInTheDocument();
     expect(screen.getByTestId('storage-sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('storage-treemap-svg')).toBeInTheDocument();
-    expect(
-      screen.getByRole('navigation', { name: 'Хлебные крошки каталога' })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Хлебные крошки каталога' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Сканировать заново' })).toBeInTheDocument();
   });
 

@@ -17,14 +17,14 @@
 
 ## Что из таксономии tomzx действует в SystemDeck
 
-| Измерение tomzx | Статус в SystemDeck |
-| --- | --- |
-| `type`: `bug`, `feature`, `question`, `chore`, `documentation`, `security` | Действует; маппинг на наши категории: `bug` → `bug`, `feature` → `enhancement`, остальное — без категорийной метки, только текстом в summary |
-| `needs-info`, `duplicate`, `invalid` | Действуют (метки существуют) |
-| `has-repro` / `needs-repro`, `regression`, `data-loss`, `stale` | Не действуют — таких меток нет; фиксировать словами в summary, метки не создавать |
-| `area:*`, `component:*`, `platform:*`, `api:*`, `perf:*`, `urgency`, `importance`, `priority:*` | Не действуют — таких меток нет; discovery (`gh label list`) это подтвердит — пропустить измерение |
-| Issue Types / Priority field (GraphQL) | Не использовать — в репозитории не заведены |
-| `ghx` | Не использовать — в проекте нет `ghx`; везде эквивалент `gh` |
+| Измерение tomzx                                                                                 | Статус в SystemDeck                                                                                                                          |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`: `bug`, `feature`, `question`, `chore`, `documentation`, `security`                      | Действует; маппинг на наши категории: `bug` → `bug`, `feature` → `enhancement`, остальное — без категорийной метки, только текстом в summary |
+| `needs-info`, `duplicate`, `invalid`                                                            | Действуют (метки существуют)                                                                                                                 |
+| `has-repro` / `needs-repro`, `regression`, `data-loss`, `stale`                                 | Не действуют — таких меток нет; фиксировать словами в summary, метки не создавать                                                            |
+| `area:*`, `component:*`, `platform:*`, `api:*`, `perf:*`, `urgency`, `importance`, `priority:*` | Не действуют — таких меток нет; discovery (`gh label list`) это подтвердит — пропустить измерение                                            |
+| Issue Types / Priority field (GraphQL)                                                          | Не использовать — в репозитории не заведены                                                                                                  |
+| `ghx`                                                                                           | Не использовать — в проекте нет `ghx`; везде эквивалент `gh`                                                                                 |
 
 ## Запрет автосоздания меток
 

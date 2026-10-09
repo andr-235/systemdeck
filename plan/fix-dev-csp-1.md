@@ -33,21 +33,21 @@ meta-тег `src/renderer/index.html` и заголовок `session...onHeaders
 
 - GOAL-001: CSP-заголовок Main применяется только вне dev и покрыт тестом
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-001 | Создать `src/main/security/csp.ts`: константы `CSP_HEADER_NAME`, `CSP_POLICY` (текущая строка политики без изменений) и чистую `resolveCspHeaders(isDev: boolean): Record<string, string[]> \| null` (`true` → `null`) | ✅ | 2026-09-23 |
-| TASK-002 | Создать `src/main/security/csp.test.ts`: `resolveCspHeaders(false)` возвращает заголовок с `script-src 'self'`; `resolveCspHeaders(true)` возвращает `null` | ✅ | 2026-09-23 |
-| TASK-003 | В `src/main/index.ts` заменить безусловный `onHeadersReceived` на условный через `resolveCspHeaders(is.dev)`; импорт из `./security/csp` | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                                                                            | Completed | Date       |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-001 | Создать `src/main/security/csp.ts`: константы `CSP_HEADER_NAME`, `CSP_POLICY` (текущая строка политики без изменений) и чистую `resolveCspHeaders(isDev: boolean): Record<string, string[]> \| null` (`true` → `null`) | ✅        | 2026-09-23 |
+| TASK-002 | Создать `src/main/security/csp.test.ts`: `resolveCspHeaders(false)` возвращает заголовок с `script-src 'self'`; `resolveCspHeaders(true)` возвращает `null`                                                            | ✅        | 2026-09-23 |
+| TASK-003 | В `src/main/index.ts` заменить безусловный `onHeadersReceived` на условный через `resolveCspHeaders(is.dev)`; импорт из `./security/csp`                                                                               | ✅        | 2026-09-23 |
 
 ### Implementation Phase 2
 
 - GOAL-002: Meta-CSP не мешает dev, но остаётся в прод-сборке
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-004 | В `electron.vite.config.ts` добавить инлайн-плагин renderer `transformIndexHtml`: при `ctx.server` (dev serve) вырезать meta `Content-Security-Policy`, при build оставлять как есть | ✅ | 2026-09-23 |
-| TASK-005 | Проверки: `npm run check:boundaries`, `npm run typecheck`, `npx vitest run src/main/security/csp.test.ts`, `npm run build` + grep meta в `out/renderer/index.html` (должна остаться) | ✅ | 2026-09-23 |
-| TASK-006 | Ручная верификация пользователем: `npm run dev` — окно с Shell, консоль без `violates ... Content Security Policy` и без `can't detect preamble` | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                                          | Completed | Date       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- | ---------- |
+| TASK-004 | В `electron.vite.config.ts` добавить инлайн-плагин renderer `transformIndexHtml`: при `ctx.server` (dev serve) вырезать meta `Content-Security-Policy`, при build оставлять как есть | ✅        | 2026-09-23 |
+| TASK-005 | Проверки: `npm run check:boundaries`, `npm run typecheck`, `npx vitest run src/main/security/csp.test.ts`, `npm run build` + grep meta в `out/renderer/index.html` (должна остаться) | ✅        | 2026-09-23 |
+| TASK-006 | Ручная верификация пользователем: `npm run dev` — окно с Shell, консоль без `violates ... Content Security Policy` и без `can't detect preamble`                                     | ✅        | 2026-09-23 |
 
 ## 3. Alternatives
 

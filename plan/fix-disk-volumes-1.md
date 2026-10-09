@@ -30,11 +30,11 @@ PowerShell `ConvertTo-Json -Compress` без `-AsArray` возвращает о�
 
 - GOAL-001: Выделить чистый маппинг и нормализовать single-object в массив с тестами
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-001 | В `src/main/monitoring/disk/DiskMonitor.ts`: извлечь `toDiskVolumes(input: LogicalDiskRow \| LogicalDiskRow[] \| null \| undefined): DiskVolumeMetrics[]`, в `defaultDiskSource` типизировать ответ как `LogicalDiskRow[] \| LogicalDiskRow` и прогнать через неё | ✅ | 2026-09-23 |
-| TASK-002 | В `src/main/monitoring/disk/DiskMonitor.test.ts`: тесты — одиночный объект даёт 1 том; массив как раньше; `null`/`undefined`/`[]` дают `[]` | ✅ | 2026-09-23 |
-| TASK-003 | Прогон `npm run check:boundaries`, `npm run typecheck`, `npm run test` (полный) | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                                                                                                                       | Completed | Date       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-001 | В `src/main/monitoring/disk/DiskMonitor.ts`: извлечь `toDiskVolumes(input: LogicalDiskRow \| LogicalDiskRow[] \| null \| undefined): DiskVolumeMetrics[]`, в `defaultDiskSource` типизировать ответ как `LogicalDiskRow[] \| LogicalDiskRow` и прогнать через неё | ✅        | 2026-09-23 |
+| TASK-002 | В `src/main/monitoring/disk/DiskMonitor.test.ts`: тесты — одиночный объект даёт 1 том; массив как раньше; `null`/`undefined`/`[]` дают `[]`                                                                                                                       | ✅        | 2026-09-23 |
+| TASK-003 | Прогон `npm run check:boundaries`, `npm run typecheck`, `npm run test` (полный)                                                                                                                                                                                   | ✅        | 2026-09-23 |
 
 ## 3. Alternatives
 

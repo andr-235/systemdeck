@@ -33,21 +33,21 @@ tags: [feature, cleaner, epic-5, planning]
 
 - GOAL-001: Зафиксировать решение и разложить эпик на дочерние issues
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-001 | Создать plan/feature-cleaner-epic-1.md по шаблону create-implementation-plan, покрывает REQ-001, REQ-002, REQ-003, REQ-004, REQ-005, CON-001, CON-002, CON-003 | ✅ | 2026-09-23 |
-| TASK-002 | Создать docs/adr/0017-cleaner-safety-model.md (модель безопасности, allow-правила, Protected Paths, per-item отчёт, альтернативы), покрывает REQ-001, CON-002, CON-003 | ✅ | 2026-09-23 |
-| TASK-003 | Создать 6 дочерних issues через gh issue create с needs-triage (+enhancement), покрывает REQ-002, REQ-004 | ✅ | 2026-09-23 |
-| TASK-004 | Обновить тело #22 (дочерние issues, Architecture decisions, Definition of Done), покрывает REQ-003 | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                            | Completed | Date       |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-001 | Создать plan/feature-cleaner-epic-1.md по шаблону create-implementation-plan, покрывает REQ-001, REQ-002, REQ-003, REQ-004, REQ-005, CON-001, CON-002, CON-003         | ✅        | 2026-09-23 |
+| TASK-002 | Создать docs/adr/0017-cleaner-safety-model.md (модель безопасности, allow-правила, Protected Paths, per-item отчёт, альтернативы), покрывает REQ-001, CON-002, CON-003 | ✅        | 2026-09-23 |
+| TASK-003 | Создать 6 дочерних issues через gh issue create с needs-triage (+enhancement), покрывает REQ-002, REQ-004                                                              | ✅        | 2026-09-23 |
+| TASK-004 | Обновить тело #22 (дочерние issues, Architecture decisions, Definition of Done), покрывает REQ-003                                                                     | ✅        | 2026-09-23 |
 
 ### Implementation Phase 2
 
 - GOAL-002: Упаковать работу в коммит и PR
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-005 | Закоммитить plan + ADR сообщением на русском (conventional-commit/git-commit), покрывает REQ-005 | ✅ | 2026-09-23 |
-| TASK-006 | Открыть PR с первой строкой тела Refs #22, лейблом ready-for-human и строкой Skills, прокомментировать #22, покрывает REQ-005 | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                   | Completed | Date       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-005 | Закоммитить plan + ADR сообщением на русском (conventional-commit/git-commit), покрывает REQ-005                              | ✅        | 2026-09-23 |
+| TASK-006 | Открыть PR с первой строкой тела Refs #22, лейблом ready-for-human и строкой Skills, прокомментировать #22, покрывает REQ-005 | ✅        | 2026-09-23 |
 
 ## 3. Alternatives
 

@@ -30,9 +30,7 @@ function makeResult(overrides: Partial<ScanResult> = {}): ScanResult {
 
 type Capture = { push: (event: ScanProgressEvent) => void };
 
-function captureApi(
-  getScanResult?: AppAPI['storage']['getScanResult']
-): Capture {
+function captureApi(getScanResult?: AppAPI['storage']['getScanResult']): Capture {
   const capture: Capture = { push: () => undefined };
   const onScanProgress = vi.fn((cb: (event: ScanProgressEvent) => void) => {
     capture.push = cb;
@@ -179,9 +177,7 @@ describe('Renderer — useStorageScan (jsdom project)', () => {
     await waitFor(() => expect(result.current.state).toMatchObject({ status: 'complete' }));
 
     rerender({ volume: 'D:' });
-    await waitFor(() =>
-      expect(getScanResult).toHaveBeenLastCalledWith('D:')
-    );
+    await waitFor(() => expect(getScanResult).toHaveBeenLastCalledWith('D:'));
     await waitFor(() => expect(result.current.state).toMatchObject({ status: 'complete' }));
   });
 

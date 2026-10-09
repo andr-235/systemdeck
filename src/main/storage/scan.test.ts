@@ -93,10 +93,7 @@ function fakeScanFs(root: FakeEntry, rootPath: string): ScanFs {
 }
 
 const volumeFixture: FakeEntry = dir('C:', [
-  dir('Games', [
-    file('quake.exe', 500),
-    dir('saves', [file('game.sav', 120)]),
-  ]),
+  dir('Games', [file('quake.exe', 500), dir('saves', [file('game.sav', 120)])]),
   dir('Windows', [file('system.dll', 100), file('win.ini', 200)]),
   dir('locked', [file('secret.dat', 999)], true),
   file('readme.md', 50),

@@ -19,7 +19,9 @@ function StorageResultSummary({ result }: { result: ScanResult }): React.JSX.Ele
       <div className="sd-stat-card">
         <dt className="sd-stat-label">Длительность</dt>
         <dd className="sd-stat-value sd-num">{(result.durationMs / 1000).toFixed(1)} с</dd>
-        <dd className="sd-stat-sub">Том {result.volumeId} · {formatDateTime(result.timestamp)}</dd>
+        <dd className="sd-stat-sub">
+          Том {result.volumeId} · {formatDateTime(result.timestamp)}
+        </dd>
       </div>
     </dl>
   );

@@ -94,12 +94,9 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
     terminateProcess:
       overrides.terminateProcess ?? (async () => ({ ok: true as const, data: undefined })),
     storage: {
-      startScan:
-        overrides.startScan ?? (async () => ({ ok: true as const, data: undefined })),
-      getScanResult:
-        overrides.getScanResult ?? (async () => ({ ok: true as const, data: null })),
-      cancelScan:
-        overrides.cancelScan ?? (async () => ({ ok: true as const, data: undefined })),
+      startScan: overrides.startScan ?? (async () => ({ ok: true as const, data: undefined })),
+      getScanResult: overrides.getScanResult ?? (async () => ({ ok: true as const, data: null })),
+      cancelScan: overrides.cancelScan ?? (async () => ({ ok: true as const, data: undefined })),
       onScanProgress:
         overrides.onScanProgress ??
         (() => () => {
