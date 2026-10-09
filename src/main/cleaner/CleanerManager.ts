@@ -47,7 +47,15 @@ export class CleanerManager {
   constructor(deps: CleanerManagerDeps) {
     this.sessions = new PreviewSessionStore({ ttlMs: deps.sessionTtlMs, now: deps.now });
     this.emitter = new CleanupProgressEmitter({
-      send: deps.send,
+      // Push best-effort: сбой отправки (webContents уничтожается при закрытии окна)
+      // не должен ни ронять операцию удаления, ни порождать unhandled rejection.
+      send: (event) => {
+        try {
+          deps.send(event);
+        } catch (error) {
+          logger.error('cleaner progress send failed', { error: toErrorParts(error) });
+        }
+      },
       throttleMs: deps.throttleMs,
       now: deps.now,
     });

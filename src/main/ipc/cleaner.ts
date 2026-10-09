@@ -23,7 +23,9 @@ function requireCategories(request: IpcRequest<PreviewChannel>): CleanupCategory
   ) {
     invalid('Ожидается непустой список идентификаторов категорий');
   }
-  return categories;
+  // Дубликаты убираются здесь: обход одной категории дважды дал бы кандидатов
+  // с разными ID на один путь и двойной подсчёт estimatedBytes в ответе preview.
+  return [...new Set(categories)];
 }
 
 function requireSessionAndIds(request: IpcRequest<DeleteChannel>): {

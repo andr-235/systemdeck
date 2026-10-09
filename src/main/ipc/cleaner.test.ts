@@ -85,6 +85,15 @@ describe('cleaner IPC handlers', () => {
     }
   });
 
+  it('deduplicates repeated category ids before walking', async () => {
+    const manager = createManager();
+    const preview = vi.spyOn(manager, 'preview');
+    const handler = createCleanerPreviewHandler(manager);
+    const result = await handler(event, { categories: ['user-temp', 'user-temp'] });
+    expect(result.ok).toBe(true);
+    expect(preview).toHaveBeenCalledWith(['user-temp']);
+  });
+
   it('never reads a raw path from a delete request', async () => {
     const manager = createManager();
     const startDelete = vi.spyOn(manager, 'startDelete');

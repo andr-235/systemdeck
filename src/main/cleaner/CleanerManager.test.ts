@@ -327,6 +327,24 @@ describe('cleaner manager', () => {
     expect(terminal.report).toMatchObject({ deleted: 1, failed: 1, freedBytes: 20 });
   });
 
+  it('keeps a failing progress sink from breaking the operation', async () => {
+    const { fs, unlinked } = deleteFsStub();
+    const manager = new CleanerManager({
+      // Имитация webContents.send при закрытии окна: send бросает на каждом событии.
+      send: () => {
+        throw new Error('Object has been destroyed');
+      },
+      throttleMs: 0,
+      previewFs: previewFsStub(),
+      deleteFs: fs,
+    });
+    const preview = await manager.preview(['user-temp']);
+    manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
+    // Ни unhandled rejection (упал бы прогон vitest), ни зависшей активной операции.
+    await vi.waitFor(() => expect(manager.isActive()).toBe(false));
+    expect(unlinked.sort()).toEqual([aPath, bPath].sort());
+  });
+
   it('keeps events of a finished operation from being attributed to the next run', async () => {
     const { fs } = deleteFsStub();
     const { manager, events, preview } = await setupManager(fs);
