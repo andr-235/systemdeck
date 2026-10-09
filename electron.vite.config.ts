@@ -42,6 +42,13 @@ export default defineConfig({
     },
   },
   renderer: {
+    // Явный IPv4-loopback вместо 'localhost': Node (dns-порядок verbatim) резолвит
+    // localhost в ::1, Vite слушает только IPv6-loopback, а Chromium/Electron
+    // стартует с 127.0.0.1 → ERR_CONNECTION_REFUSED в dev. Кроме того, 127.0.0.1
+    // не раскрывает dev-сервер в локальную сеть (best practice, electron-best-practices).
+    server: {
+      host: '127.0.0.1',
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
