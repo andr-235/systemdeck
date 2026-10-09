@@ -67,6 +67,28 @@ describe('Renderer — App (jsdom project)', () => {
     );
   });
 
+  it('navigates to the Cleaner page from the Shell', async () => {
+    const subscribe = vi.fn(async () => ({ ok: true as const, data: { intervalMs: 1000 } }));
+    setMockApi({ subscribe });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Очистка' }));
+    });
+
+    expect(screen.getByRole('heading', { name: 'Очистка' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Очистка' })).toHaveAttribute('aria-current', 'page');
+    expect(
+      screen.getByText('Выберите категории и запустите предпросмотр — кандидаты появятся здесь.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: 'Статус: Ожидание — предпросмотр не запускался' })
+    ).toBeInTheDocument();
+  });
+
   it('pause freezes displayed values until resumed', async () => {
     const subscribe = vi.fn(async () => ({ ok: true as const, data: { intervalMs: 1000 } }));
     const capturedListeners: Array<(s: LiveSnapshot) => void> = [];

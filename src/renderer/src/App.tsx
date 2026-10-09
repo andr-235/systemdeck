@@ -11,12 +11,12 @@ import ProcessWidget from './components/ProcessWidget';
 import ProcessPage from './components/ProcessPage';
 import ProcessDetails from './components/ProcessDetails';
 import StoragePage from './components/StoragePage';
+import CleanerPage from './components/cleaner/CleanerPage';
+import AppNav, { type AppPage } from './components/AppNav';
 import { findProcessById } from './processTable';
 
-type Page = 'dashboard' | 'processes' | 'storage';
-
 function App(): React.JSX.Element {
-  const [page, setPage] = useState<Page>('dashboard');
+  const [page, setPage] = useState<AppPage>('dashboard');
   const [selectedPid, setSelectedPid] = useState<number | null>(null);
   const {
     snapshot,
@@ -29,7 +29,7 @@ function App(): React.JSX.Element {
     togglePause,
   } = useLiveMetrics();
 
-  const navigate = (next: Page): void => {
+  const navigate = (next: AppPage): void => {
     if (next !== 'processes') setSelectedPid(null);
     setPage(next);
   };
@@ -40,32 +40,7 @@ function App(): React.JSX.Element {
     <div className="sd-shell">
       <header className="sd-header">
         <h1 className="sd-header-title">SystemDeck</h1>
-        <nav className="sd-nav" aria-label="Разделы">
-          <button
-            type="button"
-            className="sd-nav-button"
-            aria-current={page === 'dashboard' ? 'page' : undefined}
-            onClick={() => navigate('dashboard')}
-          >
-            Обзор
-          </button>
-          <button
-            type="button"
-            className="sd-nav-button"
-            aria-current={page === 'processes' ? 'page' : undefined}
-            onClick={() => navigate('processes')}
-          >
-            Процессы
-          </button>
-          <button
-            type="button"
-            className="sd-nav-button"
-            aria-current={page === 'storage' ? 'page' : undefined}
-            onClick={() => navigate('storage')}
-          >
-            Хранилище
-          </button>
-        </nav>
+        <AppNav page={page} onNavigate={navigate} />
         <span className="sd-sampling">Опрос: 1 с{paused ? ' · пауза' : ''}</span>
         <button
           type="button"
@@ -95,6 +70,10 @@ function App(): React.JSX.Element {
       ) : page === 'storage' ? (
         <main className="sd-storage-page">
           <StoragePage disks={snapshot?.disks ?? null} />
+        </main>
+      ) : page === 'cleaner' ? (
+        <main className="sd-cleaner-page">
+          <CleanerPage />
         </main>
       ) : (
         <main className="sd-dashboard">
