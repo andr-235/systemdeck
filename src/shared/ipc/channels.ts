@@ -10,6 +10,9 @@ export const IPC_CHANNELS = {
   storageScanStart: 'systemdeck:storage:scan:start',
   storageScanGet: 'systemdeck:storage:scan:get',
   storageScanCancel: 'systemdeck:storage:scan:cancel',
+  cleanerPreview: 'systemdeck:cleaner:preview',
+  cleanerDelete: 'systemdeck:cleaner:delete',
+  cleanerCancel: 'systemdeck:cleaner:cancel',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -23,6 +26,7 @@ export const IPC_PUSH_CHANNELS = {
   liveSnapshot: 'systemdeck:push:live:snapshot',
   processSnapshot: 'systemdeck:push:process:snapshot',
   storageScanProgress: 'systemdeck:push:storage:scan:progress',
+  cleanerProgress: 'systemdeck:push:cleaner:progress',
 } as const;
 
 export type IpcPushChannel = (typeof IPC_PUSH_CHANNELS)[keyof typeof IPC_PUSH_CHANNELS];
