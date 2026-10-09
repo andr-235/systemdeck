@@ -301,6 +301,30 @@ describe('cleanup preview', () => {
     expect(preview.sources[0].reason).toBeUndefined();
   });
 
+  it('keeps a candidate of another category out of the walked source', async () => {
+    // Пересечение корней правил: файл лежит в обойдённом корне, но правило отдаёт его
+    // чужой категории — он не должен попасть в кандидаты и статистику своей (issue #58).
+    const root = 'C:\\Sandbox\\Temp';
+    const rules: CleanupRule[] = [
+      { kind: 'file', category: 'log-files', allowRoot: root, pattern: /\.log$/ },
+      { kind: 'file', category: 'user-temp', allowRoot: root, pattern: /\.tmp$/ },
+    ];
+    const fs = fakeFs(
+      {
+        [root]: [
+          ['x.log', 'file'],
+          ['x.tmp', 'file'],
+        ],
+      },
+      { [`${root}\\x.log`]: 5, [`${root}\\x.tmp`]: 7 }
+    );
+    const preview = await buildCleanupPreview(['user-temp'], fs, { rules });
+    expect(preview.candidates).toEqual([
+      { path: `${root}\\x.tmp`, sizeBytes: 7, category: 'user-temp', mtimeMs: OLD_MTIME },
+    ]);
+    expect(preview.sources[0]).toMatchObject({ category: 'user-temp', candidateCount: 1 });
+  });
+
   it('marks a source partial when directories are inaccessible', async () => {
     const userRoot = ruleRoot('user-temp');
     const lockedDir = `${userRoot}\\locked`;

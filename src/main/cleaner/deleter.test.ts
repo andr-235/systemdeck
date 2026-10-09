@@ -56,6 +56,7 @@ describe('cleanup deleter', () => {
     const processed: number[] = [];
     const items = await runCleanup([candidate(path, 7)], {
       fs,
+      rules: cleanerRules(),
       isCancelled: () => false,
       onItem: (_item, count) => processed.push(count),
     });
@@ -70,6 +71,7 @@ describe('cleanup deleter', () => {
     const { fs, unlinked, lstatCalls } = deleteFsStub({});
     const items = await runCleanup([candidate(protectedPath), candidate(outsidePath)], {
       fs,
+      rules: cleanerRules(),
       isCancelled: () => false,
     });
     expect(items).toEqual([
@@ -96,6 +98,7 @@ describe('cleanup deleter', () => {
     const { fs, unlinked } = deleteFsStub({ [linkPath]: { symlink: true } });
     const items = await runCleanup([candidate(missingPath), candidate(linkPath)], {
       fs,
+      rules: cleanerRules(),
       isCancelled: () => false,
     });
     expect(items.every((item) => item.outcome === 'skipped')).toBe(true);
@@ -118,7 +121,7 @@ describe('cleanup deleter', () => {
     });
     const items = await runCleanup(
       [candidate(resizedPath), candidate(touchedPath), candidate(untouchedPath)],
-      { fs, isCancelled: () => false }
+      { fs, rules: cleanerRules(), isCancelled: () => false }
     );
     expect(items.map((item) => item.outcome)).toEqual(['skipped', 'skipped', 'deleted']);
     expect(unlinked).toEqual([untouchedPath]);
@@ -133,6 +136,7 @@ describe('cleanup deleter', () => {
     );
     const items = await runCleanup([candidate(lockedPath, 3), candidate(freePath, 4)], {
       fs,
+      rules: cleanerRules(),
       isCancelled: () => false,
     });
     expect(items[0]).toMatchObject({ path: lockedPath, outcome: 'failed' });
@@ -151,6 +155,7 @@ describe('cleanup deleter', () => {
     const seen: boolean[] = [];
     const items = await runCleanup([candidate(firstPath), candidate(secondPath)], {
       fs,
+      rules: cleanerRules(),
       isCancelled: () => {
         seen.push(true);
         return seen.length > 1;
@@ -164,7 +169,12 @@ describe('cleanup deleter', () => {
     const path = `${userRoot}\\a.tmp`;
     const { fs } = deleteFsStub({ [path]: { size: 5 } });
     const onItem = vi.fn();
-    await runCleanup([candidate(path, 5)], { fs, isCancelled: () => false, onItem });
+    await runCleanup([candidate(path, 5)], {
+      fs,
+      rules: cleanerRules(),
+      isCancelled: () => false,
+      onItem,
+    });
     expect(onItem).toHaveBeenCalledWith({ path, outcome: 'deleted', bytesFreed: 5 }, 1, 5);
   });
 
@@ -178,6 +188,7 @@ describe('cleanup deleter', () => {
     );
     const items = await runCleanup([candidate(busyPath, 3), candidate(freePath, 4)], {
       fs,
+      rules: cleanerRules(),
       isCancelled: () => false,
     });
     expect(items[0]).toEqual({
@@ -261,7 +272,7 @@ describe('cleanup deleter', () => {
     };
     const items = await runCleanup(
       [{ id: 'c1', path: recyclePath, sizeBytes: 120, category: 'recycle-bin' }],
-      { fs, isCancelled: () => false, recycleShell }
+      { fs, rules: cleanerRules(), isCancelled: () => false, recycleShell }
     );
     expect(items).toEqual([{ path: recyclePath, outcome: 'deleted', bytesFreed: 120 }]);
     expect(cleared).toEqual(['C:\\']);
@@ -282,7 +293,7 @@ describe('cleanup deleter', () => {
     };
     const items = await runCleanup(
       [{ id: 'c1', path: recyclePath, sizeBytes: 10, category: 'recycle-bin' }],
-      { fs, isCancelled: () => false, recycleShell }
+      { fs, rules: cleanerRules(), isCancelled: () => false, recycleShell }
     );
     expect(items[0]).toMatchObject({ outcome: 'failed', bytesFreed: 0 });
     if (items[0].outcome === 'failed') {

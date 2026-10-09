@@ -395,9 +395,9 @@ describe('cleaner manager', () => {
   });
 
   it('re-resolves browser rules at delete time so a vanished cache root blocks the run', async () => {
-    const local = process.env.LOCALAPPDATA;
-    expect(local).toBeTruthy();
-    const chromeBase = `${local}\\Google\\Chrome\\User Data`;
+    const testLocal = 'C:\\SD-CleanerTest\\Local';
+    const testRoaming = 'C:\\SD-CleanerTest\\Roaming';
+    const chromeBase = `${testLocal}\\Google\\Chrome\\User Data`;
     const profilePath = `${chromeBase}\\Default`;
     const cacheRoot = `${profilePath}\\Cache`;
     let cachePresent = true;
@@ -423,6 +423,8 @@ describe('cleaner manager', () => {
       throttleMs: 0,
       previewFs,
       deleteFs,
+      // Окружение инжектируется (PAT-001): тест не зависит от реального %LOCALAPPDATA%.
+      env: { LOCALAPPDATA: testLocal, APPDATA: testRoaming },
     });
     const preview = await manager.preview(['browser-cache']);
     expect(preview.candidates).toHaveLength(1);
@@ -439,5 +441,58 @@ describe('cleaner manager', () => {
     ).rejects.toMatchObject({ code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES });
     expect(manager.isActive()).toBe(false);
     expect(unlinked).toEqual([]);
+  });
+
+  it('rejects a preview that arrives while a delete is still starting', async () => {
+    const testLocal = 'C:\\SD-CleanerTest\\Local';
+    const testRoaming = 'C:\\SD-CleanerTest\\Roaming';
+    const chromeBase = `${testLocal}\\Google\\Chrome\\User Data`;
+    const testRoot = `${testLocal}\\Temp`;
+    // Обнаружение профилей блокируется только после первого превью: так окно между
+    // синхронным резервом стартующей операции и установкой active становится видимым.
+    let holdDiscovery = false;
+    let releaseDiscovery: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      releaseDiscovery = resolve;
+    });
+    const previewFs: CleanerFs = {
+      readdir: async (path) => {
+        if (holdDiscovery && path === chromeBase) {
+          await gate;
+        }
+        if (path === testRoot) {
+          return [fileEntry('a.tmp'), fileEntry('b.tmp')];
+        }
+        throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+      },
+      stat: async () => ({ size: 10, mtimeMs: PREVIEW_MTIME, isFile: () => true }),
+    };
+    const events: CleanupProgressEvent[] = [];
+    const manager = new CleanerManager({
+      send: (event) => events.push(event),
+      throttleMs: 0,
+      previewFs,
+      deleteFs: deleteFsStub().fs,
+      env: { LOCALAPPDATA: testLocal, APPDATA: testRoaming },
+    });
+    const preview = await manager.preview(['user-temp']);
+    expect(preview.candidates).toHaveLength(2);
+
+    holdDiscovery = true;
+    const starting = manager.startDelete({
+      sessionId: preview.sessionId,
+      candidateIds: selectedIds(preview),
+    });
+    // Пока идёт обнаружение, preview не должен успеть создать новую сессию и подменить
+    // уже выбранный для удаления набор (issue #58).
+    await expect(manager.preview(['user-temp'])).rejects.toMatchObject({
+      code: IPC_ERROR_CODES.CLEAN_ALREADY_ACTIVE,
+    });
+    expect(manager.isActive()).toBe(true);
+
+    releaseDiscovery();
+    await starting;
+    await waitForTerminal(events);
+    expect(manager.isActive()).toBe(false);
   });
 });

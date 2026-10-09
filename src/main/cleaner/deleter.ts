@@ -4,7 +4,7 @@ import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { errorCode, toCleanupIpcError } from './errors';
 import { isDeletionAllowed } from './candidates';
 import { clearRecycleVolume } from './recycleBin';
-import { cleanerRules, findCleanupRule, type CleanupRule } from './rules';
+import { findCleanupRule, type CleanupRule } from './rules';
 import { nodeRecycleShell, type RecycleShell } from './recycleShell';
 
 /** Граница ФС удаления: node-fs по умолчанию, fake для тестов (прецедент ScanFs). */
@@ -36,7 +36,12 @@ export const nodeCleanerDeleteFs: CleanerDeleteFs = {
 export type RunCleanupDeps = {
   isCancelled: () => boolean;
   fs?: CleanerDeleteFs;
-  rules?: readonly CleanupRule[];
+  /**
+   * Актуальные allow-правила — обязательны: реестр `cleanerRules()` не содержит правил
+   * browser-cache, поэтому молчаливый дефолт пропускал бы такие кандидаты как
+   * `CLEAN_OUTSIDE_RULES` (issue #58).
+   */
+  rules: readonly CleanupRule[];
   /** Shell-граница корзины: очистка выбранного тома только через неё (issue #57). */
   recycleShell?: RecycleShell;
   /** Вызывается после каждого обработанного элемента: накопление отчёта и прогресс. */
@@ -49,7 +54,7 @@ export async function runCleanup(
   deps: RunCleanupDeps
 ): Promise<CleanupItemResult[]> {
   const fs = deps.fs ?? nodeCleanerDeleteFs;
-  const rules = deps.rules ?? cleanerRules();
+  const rules = deps.rules;
   const shell = deps.recycleShell ?? nodeRecycleShell;
   const items: CleanupItemResult[] = [];
   let freedBytes = 0;

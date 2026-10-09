@@ -30,7 +30,11 @@ export type CandidateBuildResult = {
 
 export type CandidateBuildOptions = {
   now?: number;
-  rules?: readonly CleanupRule[];
+  /**
+   * Актуальные allow-правила — обязательны: реестр `cleanerRules()` не покрывает
+   * browser-cache, поэтому молчаливый дефолт молча отбросил бы найденные файлы (issue #58).
+   */
+  rules: readonly CleanupRule[];
 };
 
 const HOUR_MS = 3_600_000;
@@ -49,9 +53,9 @@ function isOldEnough(entry: RawCleanupEntry, rule: CleanupFileRule, now: number)
 /** Кандидатом становится только покрытое allow-правилом и незащищённое. */
 export function buildCleanupCandidates(
   entries: RawCleanupEntry[],
-  options: CandidateBuildOptions = {}
+  options: CandidateBuildOptions
 ): CandidateBuildResult {
-  const rules = options.rules ?? cleanerRules();
+  const rules = options.rules;
   const now = options.now ?? Date.now();
   const result: CandidateBuildResult = {
     candidates: [],

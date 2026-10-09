@@ -17,12 +17,19 @@ function rootOf(category: CleanupCategory): string {
 describe('cleanup candidates', () => {
   it('keeps only allow-covered unprotected entries', () => {
     const root = rootOf('user-temp');
-    const built = buildCleanupCandidates([
-      { path: `${root}\\a.tmp`, sizeBytes: 10, mtimeMs: OLD_MTIME },
-      { path: 'C:\\Users\\alice\\Documents\\report.docx', sizeBytes: 20, mtimeMs: OLD_MTIME },
-      { path: `${windowsDir()}\\System32\\drivers\\etc\\hosts`, sizeBytes: 30, mtimeMs: OLD_MTIME },
-      { path: `${root}\\link.tmp`, sizeBytes: 40, mtimeMs: OLD_MTIME, isSymlink: true },
-    ]);
+    const built = buildCleanupCandidates(
+      [
+        { path: `${root}\\a.tmp`, sizeBytes: 10, mtimeMs: OLD_MTIME },
+        { path: 'C:\\Users\\alice\\Documents\\report.docx', sizeBytes: 20, mtimeMs: OLD_MTIME },
+        {
+          path: `${windowsDir()}\\System32\\drivers\\etc\\hosts`,
+          sizeBytes: 30,
+          mtimeMs: OLD_MTIME,
+        },
+        { path: `${root}\\link.tmp`, sizeBytes: 40, mtimeMs: OLD_MTIME, isSymlink: true },
+      ],
+      { rules: cleanerRules() }
+    );
     expect(built.candidates.map((entry) => entry.path)).toEqual([`${root}\\a.tmp`]);
     expect(built.candidates[0].protected).toBe(false);
     expect(built.candidates[0].mtimeMs).toBe(OLD_MTIME);
@@ -33,21 +40,27 @@ describe('cleanup candidates', () => {
 
   it('marks inaccessible entries without aborting the build', () => {
     const root = rootOf('user-temp');
-    const built = buildCleanupCandidates([
-      { path: `${root}\\locked.tmp`, sizeBytes: 99, mtimeMs: OLD_MTIME, inaccessible: true },
-      { path: `${root}\\ok.tmp`, sizeBytes: 1, mtimeMs: OLD_MTIME },
-    ]);
+    const built = buildCleanupCandidates(
+      [
+        { path: `${root}\\locked.tmp`, sizeBytes: 99, mtimeMs: OLD_MTIME, inaccessible: true },
+        { path: `${root}\\ok.tmp`, sizeBytes: 1, mtimeMs: OLD_MTIME },
+      ],
+      { rules: cleanerRules() }
+    );
     expect(built.inaccessible).toBe(1);
     expect(built.candidates).toHaveLength(2);
   });
 
   it('never turns a young or age-unknown file into a candidate', () => {
     const root = rootOf('user-temp');
-    const built = buildCleanupCandidates([
-      { path: `${root}\\young.tmp`, sizeBytes: 1, mtimeMs: YOUNG_MTIME },
-      { path: `${root}\\unknown.tmp`, sizeBytes: 1 },
-      { path: `${root}\\old.tmp`, sizeBytes: 1, mtimeMs: OLD_MTIME },
-    ]);
+    const built = buildCleanupCandidates(
+      [
+        { path: `${root}\\young.tmp`, sizeBytes: 1, mtimeMs: YOUNG_MTIME },
+        { path: `${root}\\unknown.tmp`, sizeBytes: 1 },
+        { path: `${root}\\old.tmp`, sizeBytes: 1, mtimeMs: OLD_MTIME },
+      ],
+      { rules: cleanerRules() }
+    );
     expect(built.candidates.map((entry) => entry.path)).toEqual([`${root}\\old.tmp`]);
     expect(built.skippedTooYoung).toBe(2);
   });
@@ -85,9 +98,10 @@ describe('cleanup candidates', () => {
   });
 
   it('never builds a file candidate for the recycle volume root', () => {
-    const built = buildCleanupCandidates([
-      { path: 'C:\\$Recycle.Bin', sizeBytes: 10, mtimeMs: OLD_MTIME },
-    ]);
+    const built = buildCleanupCandidates(
+      [{ path: 'C:\\$Recycle.Bin', sizeBytes: 10, mtimeMs: OLD_MTIME }],
+      { rules: cleanerRules() }
+    );
     expect(built.candidates).toHaveLength(0);
     expect(built.skippedOutsideRules).toBe(1);
   });
