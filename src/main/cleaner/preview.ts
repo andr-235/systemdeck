@@ -1,6 +1,7 @@
 import type { CleanupCategory, CleanupPreviewSource } from '@shared/ipc/contracts';
 import { buildCleanupCandidates } from './candidates';
-import { CLEANER_RULES } from './rules';
+import { cleanerRules, rootsForCategory, type CleanupRule } from './rules';
+import { buildPreviewSource } from './sourceStatus';
 import { collectCleanupCandidates, nodeCleanerFs, type CleanerFs } from './walker';
 
 /** Черновик кандидата: ID присваивает preview-сессия при создании (GUD-001). */
@@ -8,6 +9,8 @@ export type CleanupCandidateDraft = {
   path: string;
   sizeBytes: number;
   category: CleanupCategory;
+  /** Параметры файла на момент превью: удаление сверяет их повторно (issue #56). */
+  mtimeMs?: number;
 };
 
 export type CleanupPreview = {
@@ -15,33 +18,20 @@ export type CleanupPreview = {
   sources: CleanupPreviewSource[];
 };
 
-/** Allow-корни одной категории; Renderer корни не передаёт (CON-004). */
-function rootsForCategory(category: CleanupCategory): string[] {
-  const roots = new Set<string>();
-  for (const rule of CLEANER_RULES) {
-    if (rule.category === category) {
-      roots.add(rule.allowRoot);
-    }
-  }
-  return [...roots];
-}
-
-function sourceStatus(
-  candidateCount: number,
-  inaccessibleDirectories: number
-): CleanupPreviewSource['status'] {
-  if (inaccessibleDirectories > 0) {
-    return 'partial';
-  }
-  return candidateCount === 0 ? 'empty' : 'ok';
-}
+export type PreviewOptions = {
+  now?: number;
+  rules?: readonly CleanupRule[];
+};
 
 /** Обход allow-корней каждой категории; кандидат другой категории в её источник не входит. */
 export async function buildCleanupPreview(
   categories: readonly CleanupCategory[],
-  fs: CleanerFs = nodeCleanerFs
+  fs: CleanerFs = nodeCleanerFs,
+  options: PreviewOptions = {}
 ): Promise<CleanupPreview> {
-  const perCategory = await Promise.all(categories.map((c) => collectCategory(c, fs)));
+  const rules = options.rules ?? cleanerRules();
+  const now = options.now ?? Date.now();
+  const perCategory = await Promise.all(categories.map((c) => collectCategory(c, fs, rules, now)));
   return {
     candidates: perCategory.flatMap((part) => part.candidates),
     sources: perCategory.map((part) => part.source),
@@ -50,27 +40,23 @@ export async function buildCleanupPreview(
 
 async function collectCategory(
   category: CleanupCategory,
-  fs: CleanerFs
+  fs: CleanerFs,
+  rules: readonly CleanupRule[],
+  now: number
 ): Promise<{ candidates: CleanupCandidateDraft[]; source: CleanupPreviewSource }> {
-  const { entries, inaccessibleDirs } = await collectCleanupCandidates(
-    rootsForCategory(category),
-    fs
-  );
-  const own = buildCleanupCandidates(entries).candidates.filter((c) => c.category === category);
-  const candidates: CleanupCandidateDraft[] = own.map((c) => ({
-    path: c.path,
-    sizeBytes: c.sizeBytes,
-    category: c.category,
-  }));
-  const estimatedBytes = candidates.reduce((sum, c) => sum + c.sizeBytes, 0);
+  const roots = rootsForCategory(category, rules);
+  const collected = await collectCleanupCandidates(roots, fs);
+  const built = buildCleanupCandidates(collected.entries, { rules, now });
+  const candidates: CleanupCandidateDraft[] = built.candidates
+    .filter((candidate) => candidate.category === category)
+    .map((candidate) => ({
+      path: candidate.path,
+      sizeBytes: candidate.sizeBytes,
+      category: candidate.category,
+      mtimeMs: candidate.mtimeMs,
+    }));
   return {
     candidates,
-    source: {
-      category,
-      status: sourceStatus(candidates.length, inaccessibleDirs.length),
-      candidateCount: candidates.length,
-      estimatedBytes,
-      inaccessibleDirectories: inaccessibleDirs.length,
-    },
+    source: buildPreviewSource({ category, rules, roots, collected, candidates }),
   };
 }

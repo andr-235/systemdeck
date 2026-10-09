@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CleanupProgressEvent, CleanerPreviewResponse } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { CLEANUP_SESSION_TTL_MS } from './previewSession';
-import { CLEANER_RULES } from './rules';
+import { cleanerRules } from './rules';
 import type { CleanerDeleteFs } from './deleter';
 import type { CleanerDirEntry, CleanerFs } from './walker';
 
@@ -14,9 +14,11 @@ vi.mock('./candidates', async (importOriginal) => {
 import { isDeletionAllowed } from './candidates';
 import { CleanerManager } from './CleanerManager';
 
-const userRoot = CLEANER_RULES.find((rule) => rule.category === 'user-temp')!.allowRoot;
+const userRoot = cleanerRules().find((rule) => rule.category === 'user-temp')!.allowRoot;
 const aPath = `${userRoot}\\a.tmp`;
 const bPath = `${userRoot}\\b.tmp`;
+/** Общий mtime превью и удаления: параметры должны совпасть, иначе элемент пропускается. */
+const PREVIEW_MTIME = 1_700_000_000_000;
 
 type TerminalEvent = Extract<
   CleanupProgressEvent,
@@ -39,7 +41,11 @@ function fileEntry(name: string): CleanerDirEntry {
 function previewFsStub(): CleanerFs {
   return {
     readdir: async () => [fileEntry('a.tmp'), fileEntry('b.tmp')],
-    stat: async (path) => ({ size: path === aPath ? 10 : 20, isFile: () => true }),
+    stat: async (path) => ({
+      size: path === aPath ? 10 : 20,
+      mtimeMs: PREVIEW_MTIME,
+      isFile: () => true,
+    }),
   };
 }
 
@@ -58,7 +64,12 @@ function deleteFsStub(options: DeleteStubOptions = {}): {
         if (!(path in sizes)) {
           throw new Error('ENOENT');
         }
-        return { size: sizes[path], isFile: () => true, isSymbolicLink: () => false };
+        return {
+          size: sizes[path],
+          mtimeMs: PREVIEW_MTIME,
+          isFile: () => true,
+          isSymbolicLink: () => false,
+        };
       },
       unlink: async (path) => {
         const error = options.errors?.[path];
@@ -100,7 +111,12 @@ function gatedDeleteFs(): DeleteControl {
         if (!(path in sizes)) {
           throw new Error('ENOENT');
         }
-        return { size: sizes[path], isFile: () => true, isSymbolicLink: () => false };
+        return {
+          size: sizes[path],
+          mtimeMs: PREVIEW_MTIME,
+          isFile: () => true,
+          isSymbolicLink: () => false,
+        };
       },
       unlink: async (path) => {
         if (firstCall) {

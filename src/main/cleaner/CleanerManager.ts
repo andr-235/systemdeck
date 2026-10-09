@@ -14,6 +14,7 @@ import { buildCleanupPreview } from './preview';
 import { PreviewSessionStore, type PreviewSession } from './previewSession';
 import { CleanupProgressEmitter } from './progress';
 import { buildCleanupReport } from './report';
+import { cleanerRules } from './rules';
 import type { CleanerFs } from './walker';
 
 const logger = getLogger('cleaner');
@@ -88,8 +89,9 @@ export class CleanerManager {
       );
     }
     const selected = this.resolveSelected(session, request.candidateIds);
+    const rules = cleanerRules();
     for (const candidate of selected) {
-      const verdict = isDeletionAllowed(candidate.path);
+      const verdict = isDeletionAllowed(candidate.path, rules);
       if (!verdict.allowed) {
         throw cleanerError(verdict.code, 'Выбранный кандидат более не подлежит удалению');
       }

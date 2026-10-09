@@ -1,19 +1,43 @@
 import { describe, expect, it } from 'vitest';
-import { CLEANER_RULES, findCleanupRule, matchesCleanupRule } from './rules';
+import { cleanerRules, findCleanupRule, matchesCleanupRule, TEMP_MIN_AGE_HOURS } from './rules';
 
 function ruleFor(category: string) {
-  const rule = CLEANER_RULES.find((candidate) => candidate.category === category);
+  const rule = cleanerRules().find((candidate) => candidate.category === category);
   expect(rule, category).toBeDefined();
   return rule!;
 }
 
 describe('cleaner rules registry', () => {
   it('declares a non-empty allow root and pattern for every rule', () => {
-    expect(CLEANER_RULES.length).toBeGreaterThan(0);
-    for (const rule of CLEANER_RULES) {
+    const rules = cleanerRules();
+    expect(rules.length).toBeGreaterThan(0);
+    for (const rule of rules) {
       expect(rule.allowRoot.length, rule.category).toBeGreaterThan(0);
       expect(rule.pattern, rule.category).toBeInstanceOf(RegExp);
     }
+  });
+
+  it('fixes the 24 hour age threshold in the temp rule configuration', () => {
+    expect(ruleFor('user-temp').minAgeHours).toBe(TEMP_MIN_AGE_HOURS);
+    expect(ruleFor('windows-temp').minAgeHours).toBe(TEMP_MIN_AGE_HOURS);
+    expect(ruleFor('recycle-bin').minAgeHours).toBeUndefined();
+  });
+
+  it('builds temp roots from the environment instead of hardcoded drives', () => {
+    const env = { LOCALAPPDATA: 'D:\\Users\\alice\\AppData\\Local', WINDIR: 'D:\\Windows' };
+    const rules = cleanerRules(env);
+    expect(rules.find((r) => r.category === 'user-temp')?.allowRoot).toBe(
+      'D:\\Users\\alice\\AppData\\Local\\Temp'
+    );
+    expect(rules.find((r) => r.category === 'windows-temp')?.allowRoot).toBe('D:\\Windows\\Temp');
+  });
+
+  it('drops temp and log rules when the environment variables are broken', () => {
+    const rules = cleanerRules({});
+    expect(rules.some((r) => r.category === 'user-temp')).toBe(false);
+    expect(rules.some((r) => r.category === 'windows-temp')).toBe(false);
+    expect(rules.some((r) => r.category === 'log-files')).toBe(false);
+    expect(rules.some((r) => r.category === 'recycle-bin')).toBe(true);
   });
 
   it('matches temp files under the user-temp allow root', () => {
