@@ -766,3 +766,112 @@ body {
   outline: 2px solid var(--sd-color-ring);
   outline-offset: -2px;
 }
+
+/* Страница «Очистка» (EPIC 5, issue #59): preview → выбор → подтверждение → отчёт */
+.sd-cleaner-page {
+  flex: 1;
+  overflow: auto;
+  padding: var(--sd-space-2xl);
+}
+
+.sd-cleaner-fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sd-space-lg);
+  padding: var(--sd-space-md);
+  border: 1px solid var(--sd-color-border);
+  border-radius: 8px;
+}
+
+.sd-cleaner-fieldset:disabled {
+  opacity: 0.6;
+}
+
+.sd-cleaner-legend {
+  padding: 0 var(--sd-space-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sd-color-foreground-dim);
+}
+
+.sd-cleaner-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sd-space-sm);
+  min-height: 32px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sd-cleaner-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sd-cleaner-option input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sd-color-primary);
+}
+
+.sd-cleaner-option input:focus-visible {
+  outline: 2px solid var(--sd-color-ring);
+  outline-offset: 2px;
+}
+
+.sd-cleaner-run {
+  margin-top: 0;
+  min-height: 44px;
+}
+
+.sd-cleaner-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-lg);
+  flex-wrap: wrap;
+}
+
+.sd-cleaner-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-sm);
+  padding: 0;
+  margin: 0;
+}
+
+.sd-cleaner-source-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sd-space-md);
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.sd-cleaner-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sd-cleaner-table th {
+  text-align: left;
+  padding: var(--sd-space-sm) var(--sd-space-md);
+  border-bottom: 1px solid var(--sd-color-border);
+}
+
+.sd-cleaner-table td {
+  padding: var(--sd-space-sm) var(--sd-space-md);
+  border-bottom: 1px solid var(--sd-color-border);
+  vertical-align: top;
+}
+
+.sd-cleaner-table tr:has(input:checked) {
+  background: var(--sd-color-muted);
+}
+
+.sd-cleaner-path {
+  max-width: 360px;
+  font-family: var(--sd-font-mono);
+  font-size: 12px;
+  word-break: break-all;
+}

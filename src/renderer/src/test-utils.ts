@@ -1,6 +1,14 @@
 import type { AppAPI } from '@shared/api';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
-import type { LiveSnapshot, ProcessEntry, ProcessSnapshot } from '@shared/ipc';
+import type {
+  CleanerPreviewResponse,
+  CleanupPreviewCandidate,
+  CleanupProgressEvent,
+  CleanupReport,
+  LiveSnapshot,
+  ProcessEntry,
+  ProcessSnapshot,
+} from '@shared/ipc';
 
 type MockApiOverrides = Partial<{
   ping: AppAPI['ping'];
@@ -128,6 +136,71 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
 
 export function makeLiveSnapshot(overrides: Partial<LiveSnapshot> = {}): LiveSnapshot {
   return { ...emptyLiveSnapshot, ...overrides };
+}
+
+type RunningProgress = Extract<CleanupProgressEvent, { status: 'running' }>;
+type TerminalProgress = Extract<
+  CleanupProgressEvent,
+  { status: 'completed' | 'cancelled' | 'failed' }
+>;
+
+/** Фабрика preview-ответа Cleaner для тестов рендерера (issue #59). */
+export function makeCleanupPreview(
+  overrides: Partial<CleanerPreviewResponse> = {}
+): CleanerPreviewResponse {
+  return {
+    sessionId: 'session-1',
+    candidates: [],
+    estimatedBytes: 0,
+    sources: [],
+    expiresAt: Date.now() + 5 * 60_000,
+    ...overrides,
+  };
+}
+
+export function makePreviewCandidate(
+  overrides: Partial<CleanupPreviewCandidate> = {}
+): CleanupPreviewCandidate {
+  return {
+    id: 'c1',
+    path: 'C:\\Temp\\a.tmp',
+    sizeBytes: 1024,
+    category: 'user-temp',
+    mtimeMs: Date.now() - 24 * 60 * 60_000,
+    ...overrides,
+  };
+}
+
+export function makeCleanupReport(overrides: Partial<CleanupReport> = {}): CleanupReport {
+  return { items: [], total: 0, deleted: 0, skipped: 0, failed: 0, freedBytes: 0, ...overrides };
+}
+
+export function makeRunningProgress(overrides: Partial<RunningProgress> = {}): RunningProgress {
+  return {
+    operationId: 'op-1',
+    sessionId: 'session-1',
+    status: 'running',
+    phase: 'deleting',
+    timestamp: Date.now(),
+    processed: 0,
+    total: 0,
+    freedBytes: 0,
+    ...overrides,
+  };
+}
+
+export function makeTerminalProgress(
+  status: 'completed' | 'cancelled' | 'failed',
+  overrides: Partial<Omit<TerminalProgress, 'status'>> = {}
+): TerminalProgress {
+  return {
+    status,
+    operationId: 'op-1',
+    sessionId: 'session-1',
+    timestamp: Date.now(),
+    report: makeCleanupReport(),
+    ...overrides,
+  };
 }
 
 export function makeProcessSnapshot(overrides: Partial<ProcessSnapshot> = {}): ProcessSnapshot {
