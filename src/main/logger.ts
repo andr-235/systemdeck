@@ -247,6 +247,15 @@ export function getLogFilePath(): string | null {
   return currentFile;
 }
 
+/**
+ * Каталог файловых логов Application Log — источник allow-правила `log-files` (issue #57).
+ * `null` — логгер не инициализирован и каталогов логов нет.
+ */
+export function getLogDirPath(): string | null {
+  const file = currentFile ?? resolveFileFromApp();
+  return file === null ? null : dirname(file);
+}
+
 export function getLogLevel(): LogLevel {
   return currentLevel;
 }

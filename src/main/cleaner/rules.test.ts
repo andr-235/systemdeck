@@ -1,15 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { cleanerRules, findCleanupRule, matchesCleanupRule, TEMP_MIN_AGE_HOURS } from './rules';
+import type { CleanupCategory } from '@shared/ipc/contracts';
+import {
+  LOG_MIN_AGE_HOURS,
+  TEMP_MIN_AGE_HOURS,
+  cleanerRules,
+  fileRuleFor,
+  findCleanupRule,
+  isRecycleVolumePath,
+  matchesCleanupRule,
+  minAgeHoursFor,
+} from './rules';
 
-function ruleFor(category: string) {
-  const rule = cleanerRules().find((candidate) => candidate.category === category);
+const LOG_DIR = 'C:\\Users\\alice\\AppData\\Roaming\\SystemDeck\\logs';
+
+function ruleFor(category: CleanupCategory, logDir: string | null = null) {
+  const rules = logDir === null ? cleanerRules() : cleanerRules({}, logDir);
+  const rule = fileRuleFor(category, rules);
   expect(rule, category).toBeDefined();
   return rule!;
 }
 
 describe('cleaner rules registry', () => {
-  it('declares a non-empty allow root and pattern for every rule', () => {
-    const rules = cleanerRules();
+  it('declares a non-empty allow root and pattern for every file rule', () => {
+    const rules = cleanerRules({}, LOG_DIR).filter((rule) => rule.kind === 'file');
     expect(rules.length).toBeGreaterThan(0);
     for (const rule of rules) {
       expect(rule.allowRoot.length, rule.category).toBeGreaterThan(0);
@@ -17,27 +30,34 @@ describe('cleaner rules registry', () => {
     }
   });
 
-  it('fixes the 24 hour age threshold in the temp rule configuration', () => {
+  it('covers exactly one recycle-volume rule without file-only fields', () => {
+    const rules = cleanerRules({}, LOG_DIR);
+    const recycle = rules.filter((rule) => rule.kind === 'recycle-volume');
+    expect(recycle).toEqual([{ kind: 'recycle-volume', category: 'recycle-bin' }]);
+    expect(minAgeHoursFor('recycle-bin', rules)).toBeUndefined();
+  });
+
+  it('fixes the 24 hour age threshold in the temp and log rule configuration', () => {
     expect(ruleFor('user-temp').minAgeHours).toBe(TEMP_MIN_AGE_HOURS);
     expect(ruleFor('windows-temp').minAgeHours).toBe(TEMP_MIN_AGE_HOURS);
-    expect(ruleFor('recycle-bin').minAgeHours).toBeUndefined();
+    expect(ruleFor('log-files', LOG_DIR).minAgeHours).toBe(LOG_MIN_AGE_HOURS);
   });
 
   it('builds temp roots from the environment instead of hardcoded drives', () => {
     const env = { LOCALAPPDATA: 'D:\\Users\\alice\\AppData\\Local', WINDIR: 'D:\\Windows' };
     const rules = cleanerRules(env);
-    expect(rules.find((r) => r.category === 'user-temp')?.allowRoot).toBe(
+    expect(fileRuleFor('user-temp', rules)?.allowRoot).toBe(
       'D:\\Users\\alice\\AppData\\Local\\Temp'
     );
-    expect(rules.find((r) => r.category === 'windows-temp')?.allowRoot).toBe('D:\\Windows\\Temp');
+    expect(fileRuleFor('windows-temp', rules)?.allowRoot).toBe('D:\\Windows\\Temp');
   });
 
-  it('drops temp and log rules when the environment variables are broken', () => {
+  it('drops temp and log rules when the environment or log directory is broken', () => {
     const rules = cleanerRules({});
-    expect(rules.some((r) => r.category === 'user-temp')).toBe(false);
-    expect(rules.some((r) => r.category === 'windows-temp')).toBe(false);
-    expect(rules.some((r) => r.category === 'log-files')).toBe(false);
-    expect(rules.some((r) => r.category === 'recycle-bin')).toBe(true);
+    expect(rules.some((rule) => rule.category === 'user-temp')).toBe(false);
+    expect(rules.some((rule) => rule.category === 'windows-temp')).toBe(false);
+    expect(rules.some((rule) => rule.category === 'log-files')).toBe(false);
+    expect(rules.some((rule) => rule.category === 'recycle-bin')).toBe(true);
   });
 
   it('matches temp files under the user-temp allow root', () => {
@@ -63,12 +83,26 @@ describe('cleaner rules registry', () => {
     const rule = ruleFor('thumbnail-cache');
     expect(matchesCleanupRule(`${rule.allowRoot}\\thumbcache_256.db`, rule)).toBe(true);
     expect(matchesCleanupRule(`${rule.allowRoot}\\not-a-cache.jpg`, rule)).toBe(false);
+    expect(rule.allowRoot.endsWith('\\Microsoft\\Windows\\Explorer')).toBe(true);
   });
 
-  it('matches etl logs under the log-files allow root', () => {
-    const rule = ruleFor('log-files');
-    expect(matchesCleanupRule(`${rule.allowRoot}\\waasmedic.etl`, rule)).toBe(true);
-    expect(matchesCleanupRule(`${rule.allowRoot}\\installer.evtx`, rule)).toBe(false);
+  it('matches only rotated SystemDeck logs, never the active log or system logs', () => {
+    const rule = ruleFor('log-files', LOG_DIR);
+    expect(matchesCleanupRule(`${LOG_DIR}\\systemdeck.log.1`, rule)).toBe(true);
+    expect(matchesCleanupRule(`${LOG_DIR}\\systemdeck.log.3`, rule)).toBe(true);
+    // Активный Application Log и прочие файлы каталога — не кандидаты (issue #57).
+    expect(matchesCleanupRule(`${LOG_DIR}\\systemdeck.log`, rule)).toBe(false);
+    expect(matchesCleanupRule(`${LOG_DIR}\\other.log`, rule)).toBe(false);
+    expect(matchesCleanupRule(`${LOG_DIR}\\systemdeck.log.1.bak`, rule)).toBe(false);
+  });
+
+  it('never builds a rule for Windows logs, event logs or system etl files', () => {
+    const rules = cleanerRules({}, LOG_DIR);
+    expect(findCleanupRule('C:\\Windows\\Logs\\setup.log', rules)).toBeUndefined();
+    expect(
+      findCleanupRule('C:\\Windows\\System32\\winevt\\Logs\\Application.evtx', rules)
+    ).toBeUndefined();
+    expect(findCleanupRule('C:\\Windows\\System32\\LogFiles\\setup.etl', rules)).toBeUndefined();
   });
 
   it('matches a Cache segment under the browser-cache allow root', () => {
@@ -77,8 +111,19 @@ describe('cleaner rules registry', () => {
     expect(matchesCleanupRule(path, rule)).toBe(true);
   });
 
-  it('never treats an allow root itself as junk', () => {
-    expect(findCleanupRule(ruleFor('recycle-bin').allowRoot)).toBeUndefined();
+  it('never treats a file allow root itself as junk, unlike the recycle volume root', () => {
     expect(findCleanupRule(ruleFor('user-temp').allowRoot)).toBeUndefined();
+    expect(findCleanupRule('C:\\$Recycle.Bin')?.kind).toBe('recycle-volume');
+  });
+
+  it('accepts only the exact recycle root of a drive as the aggregate candidate', () => {
+    expect(isRecycleVolumePath('C:\\$Recycle.Bin')).toBe(true);
+    expect(isRecycleVolumePath('c:/$Recycle.Bin')).toBe(true);
+    expect(isRecycleVolumePath('C:\\$Recycle.Bin\\')).toBe(true);
+    expect(isRecycleVolumePath('D:\\$Recycle.Bin')).toBe(true);
+    expect(isRecycleVolumePath('C:\\$Recycle.Bin\\$R123.doc')).toBe(false);
+    expect(isRecycleVolumePath('C:\\$Recycle.Bin2')).toBe(false);
+    expect(isRecycleVolumePath('C:\\$Recycle.Bin\\..\\Users\\a.doc')).toBe(false);
+    expect(isRecycleVolumePath('C:\\Users\\$Recycle.Bin')).toBe(false);
   });
 });

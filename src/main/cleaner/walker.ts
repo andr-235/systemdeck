@@ -1,5 +1,6 @@
 import { readdir, stat } from 'node:fs/promises';
 import type { RawCleanupEntry } from './candidates';
+import { errorCode } from './errors';
 
 export type CleanerDirEntry = {
   name: string;
@@ -26,11 +27,6 @@ export type CollectResult = {
 
 function joinCleanerPath(dir: string, name: string): string {
   return dir.endsWith('\\') ? `${dir}${name}` : `${dir}\\${name}`;
-}
-
-function errorCode(error: unknown): string | undefined {
-  const code = (error as { code?: unknown }).code;
-  return typeof code === 'string' ? code : undefined;
 }
 
 /** Обход только allow-корней; Reparse Point никогда не обходятся. */

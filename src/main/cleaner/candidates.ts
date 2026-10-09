@@ -1,7 +1,13 @@
 import type { CleanupCandidate } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { isProtectedPath } from './protectedPaths';
-import { cleanerRules, findCleanupRule, type CleanupRule } from './rules';
+import {
+  cleanerRules,
+  findCleanupRule,
+  findFileRule,
+  type CleanupFileRule,
+  type CleanupRule,
+} from './rules';
 
 /** Сырая запись на вход движка (от walker или будущего enumerator корзины). */
 export type RawCleanupEntry = {
@@ -29,8 +35,8 @@ export type CandidateBuildOptions = {
 
 const HOUR_MS = 3_600_000;
 
-/** Возрастная проверка по конфигурации правила: неизвестный возраст — не старый файл. */
-function isOldEnough(entry: RawCleanupEntry, rule: CleanupRule, now: number): boolean {
+/** Возрастная проверка по конфигурации файла: неизвестный возраст — не старый файл. */
+function isOldEnough(entry: RawCleanupEntry, rule: CleanupFileRule, now: number): boolean {
   if (rule.minAgeHours === undefined) {
     return true;
   }
@@ -67,7 +73,8 @@ export function buildCleanupCandidates(
       result.skippedProtected++;
       continue;
     }
-    const rule = findCleanupRule(entry.path, rules);
+    // Агрегат корзины из файлового обхода не строится: его даёт только Shell-энумератор.
+    const rule = findFileRule(entry.path, rules);
     if (!rule) {
       result.skippedOutsideRules++;
       continue;

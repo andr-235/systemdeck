@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { buildCleanupCandidates, isDeletionAllowed } from './candidates';
-import { cleanerRules } from './rules';
+import { cleanerRules, fileRuleFor } from './rules';
 import { windowsDir } from './systemRoots';
+import type { CleanupCategory } from '@shared/ipc/contracts';
 
 const OLD_MTIME = Date.now() - 48 * 3_600_000;
 const YOUNG_MTIME = Date.now() - 60_000;
 
-function rootOf(category: string): string {
-  const rule = cleanerRules().find((candidate) => candidate.category === category);
+function rootOf(category: CleanupCategory): string {
+  const rule = fileRuleFor(category, cleanerRules());
   expect(rule, category).toBeDefined();
   return rule!.allowRoot;
 }
@@ -75,10 +76,19 @@ describe('cleanup candidates', () => {
       allowed: false,
       code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES,
     });
-    const recycleRoot = rootOf('recycle-bin');
-    expect(isDeletionAllowed(recycleRoot)).toEqual({
+    // Агрегат корзины допустим только как целый том, файл внутри корзины — вне правил.
+    expect(isDeletionAllowed('C:\\$Recycle.Bin')).toEqual({ allowed: true });
+    expect(isDeletionAllowed('C:\\$Recycle.Bin\\$R123.doc')).toEqual({
       allowed: false,
       code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES,
     });
+  });
+
+  it('never builds a file candidate for the recycle volume root', () => {
+    const built = buildCleanupCandidates([
+      { path: 'C:\\$Recycle.Bin', sizeBytes: 10, mtimeMs: OLD_MTIME },
+    ]);
+    expect(built.candidates).toHaveLength(0);
+    expect(built.skippedOutsideRules).toBe(1);
   });
 });
