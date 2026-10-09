@@ -16,6 +16,10 @@ export const CLEANER_CATEGORIES: readonly CleanupCategory[] = [
   'log-files',
 ];
 
+/** Отказ Application API (reject вместо IpcResult) — не зависать в scanning/cleaning. */
+export const INVOKE_REJECTED_MESSAGE =
+  'Не удалось выполнить запрос к подсистеме очистки — попробуйте ещё раз.';
+
 const CATEGORY_LABELS: Record<CleanupCategory, string> = {
   'user-temp': 'Временные файлы пользователя',
   'windows-temp': 'Временные файлы Windows',

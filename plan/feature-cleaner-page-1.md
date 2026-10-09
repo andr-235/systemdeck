@@ -159,6 +159,15 @@ tags: [feature, cleaner, epic-5, renderer, react, ui]
 - `npm run smoke` — **FAIL**: `systemOk:false`, `systemdeck:system:info` падает с `Command failed: powershell.exe … Get-CimInstance Win32_OperatingSystem` (таймаут 5000 мс в `src/main/system/ps.ts` при ~1,4–2,1 с на прямом запуске команды).
 - Причина проверена: тот же FAIL воспроизводится на чистом `main` без правок этой задачи (`git stash -u` → `npm run smoke` → FAIL → `git stash pop`) — отказ воспроизводим и до изменений issue #59 (Main/PowerShell-окружение), правки скоупа #59 его не затрагивают.
 
+### Ревью PR #70 — исправления (2026-10-09)
+
+1. **Disabled-состояние «Предпросмотр»** (REQ-013): добавлен `.sd-button:disabled { opacity: .5; cursor: not-allowed }` — единственный `.sd-button` в приложении с `disabled` не имел визуального отличия.
+2. **Смена категорий во время сканирования**: `<fieldset disabled={disabled || busy}>` — до правки чекбоксы оставались активны в `scanning`, `toggleCategory` не помечал preview stale, и результат соответствовал бы не тем категорий, что показаны в UI.
+3. **Диалог подтверждения при истечении TTL**: `open = confirmOpen && selected.length > 0` + сброс `confirmOpen` в `useEffect` — вместо «Будет удалено: 0 элементов» с активной кнопкой; флаг сброшен, поэтому новый preview + выбор не открывают диалог сами.
+4. **Reject моста (не `IpcResult`)**: `.catch` на `preview`/`delete`/`cancel` с текстом `INVOKE_REJECTED_MESSAGE` — страница не зависает в `scanning` (кнопка «Сканирование…» навсегда disabled), `cleaning` («Отменить» disabled при `operationId: null`) и «Отмена запрошена…».
+
+Тесты: +3 в `useCleaner.test.ts` (reject preview/delete/cancel), +1 в `CleanerPage.test.tsx` (диалог закрывается по TTL и не переоткрывается), расширен сканирующий тест (checkboxes заблокированы/разблокированы).
+
 ## 7. Risks & Assumptions
 
 - **RISK-001**: Гонка «invoke ещё не вернул `operationId`, а push уже пришёл» — mitigated: в `cleaning` допускается `operationId: null`, первое событие своей сессии запирает ID (REQ-011).

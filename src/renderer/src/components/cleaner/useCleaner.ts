@@ -6,7 +6,7 @@ import type {
   CleanupReport,
   CleanerPreviewResponse,
 } from '@shared/ipc/contracts';
-import { CLEANER_CATEGORIES, ipcErrorMessage } from './cleanerText';
+import { CLEANER_CATEGORIES, INVOKE_REJECTED_MESSAGE, ipcErrorMessage } from './cleanerText';
 
 type RunningProgress = Extract<CleanupProgressEvent, { status: 'running' }>;
 
@@ -159,27 +159,40 @@ export function useCleaner(): CleanerHook {
   const runPreview = useCallback(() => {
     const seq = ++previewSeqRef.current;
     setState({ status: 'scanning' });
-    void window.api.cleaner.preview({ categories }).then((result) => {
-      if (disposedRef.current || seq !== previewSeqRef.current) return;
-      if (result.ok) {
-        setNow(Date.now());
-        setState({
-          status: 'ready',
-          preview: result.data,
-          selectedIds: new Set<string>(),
-          stale: false,
-          staleReason: null,
-        });
-      } else {
+    void window.api.cleaner
+      .preview({ categories })
+      .then((result) => {
+        if (disposedRef.current || seq !== previewSeqRef.current) return;
+        if (result.ok) {
+          setNow(Date.now());
+          setState({
+            status: 'ready',
+            preview: result.data,
+            selectedIds: new Set<string>(),
+            stale: false,
+            staleReason: null,
+          });
+        } else {
+          setState({
+            status: 'failed',
+            stage: 'preview',
+            message: ipcErrorMessage(result.error),
+            report: null,
+            estimatedBytes: null,
+          });
+        }
+      })
+      .catch(() => {
+        // Отказ моста (reject вместо IpcResult): выходим из «Сканирование…», иначе кнопка зависнет.
+        if (disposedRef.current || seq !== previewSeqRef.current) return;
         setState({
           status: 'failed',
           stage: 'preview',
-          message: ipcErrorMessage(result.error),
+          message: INVOKE_REJECTED_MESSAGE,
           report: null,
           estimatedBytes: null,
         });
-      }
-    });
+      });
   }, [categories]);
 
   const toggleCandidate = useCallback((id: string) => {
@@ -231,42 +244,70 @@ export function useCleaner(): CleanerHook {
       cancelRequested: false,
       lastEventAt: Date.now(),
     });
-    void window.api.cleaner.delete({ sessionId, candidateIds }).then((result) => {
-      if (disposedRef.current) return;
-      if (result.ok) {
+    void window.api.cleaner
+      .delete({ sessionId, candidateIds })
+      .then((result) => {
+        if (disposedRef.current) return;
+        if (result.ok) {
+          setState((prev) =>
+            prev.status === 'cleaning' && prev.sessionId === sessionId && prev.operationId === null
+              ? { ...prev, operationId: result.data.operationId }
+              : prev
+          );
+          return;
+        }
         setState((prev) =>
-          prev.status === 'cleaning' && prev.sessionId === sessionId && prev.operationId === null
-            ? { ...prev, operationId: result.data.operationId }
+          prev.status === 'cleaning' && prev.sessionId === sessionId
+            ? {
+                status: 'failed',
+                stage: 'delete',
+                message: ipcErrorMessage(result.error),
+                report: null,
+                estimatedBytes,
+              }
             : prev
         );
-        return;
-      }
-      setState((prev) =>
-        prev.status === 'cleaning' && prev.sessionId === sessionId
-          ? {
-              status: 'failed',
-              stage: 'delete',
-              message: ipcErrorMessage(result.error),
-              report: null,
-              estimatedBytes,
-            }
-          : prev
-      );
-    });
+      })
+      .catch(() => {
+        // Reject моста: иначе страница останется в «cleaning» с неактивной отменой.
+        if (disposedRef.current) return;
+        setState((prev) =>
+          prev.status === 'cleaning' && prev.sessionId === sessionId
+            ? {
+                status: 'failed',
+                stage: 'delete',
+                message: INVOKE_REJECTED_MESSAGE,
+                report: null,
+                estimatedBytes,
+              }
+            : prev
+        );
+      });
   }, [state]);
 
   const requestCancel = useCallback(() => {
     if (state.status !== 'cleaning' || state.operationId === null || state.cancelRequested) return;
     const operationId = state.operationId;
     setState((prev) => (prev.status === 'cleaning' ? { ...prev, cancelRequested: true } : prev));
-    void window.api.cleaner.cancel({ operationId }).then((result) => {
-      if (disposedRef.current || result.ok) return;
-      setState((prev) =>
-        prev.status === 'cleaning' && prev.operationId === operationId
-          ? { ...prev, cancelRequested: false }
-          : prev
-      );
-    });
+    void window.api.cleaner
+      .cancel({ operationId })
+      .then((result) => {
+        if (disposedRef.current || result.ok) return;
+        setState((prev) =>
+          prev.status === 'cleaning' && prev.operationId === operationId
+            ? { ...prev, cancelRequested: false }
+            : prev
+        );
+      })
+      .catch(() => {
+        // Reject моста: снимаем «Отмена запрошена…», чтобы кнопка отмены не зависла.
+        if (disposedRef.current) return;
+        setState((prev) =>
+          prev.status === 'cleaning' && prev.operationId === operationId
+            ? { ...prev, cancelRequested: false }
+            : prev
+        );
+      });
   }, [state]);
 
   return {

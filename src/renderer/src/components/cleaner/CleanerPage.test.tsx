@@ -278,6 +278,9 @@ describe('cleaner — CleanerPage (jsdom project)', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Сканирование…' })).toBeDisabled();
+    // выбор категорий заперт на время сканирования: иначе результат предпросмотра
+    // соответствовал бы не тем категорий, что показаны в чекбоксах
+    expect(screen.getByRole('checkbox', { name: 'Корзина' })).toBeDisabled();
     expect(screen.getByText('Сканирование разрешённых каталогов…')).toBeInTheDocument();
     expect(screen.getByRole('status', { name: 'Статус: Сканирование…' })).toBeInTheDocument();
 
@@ -285,6 +288,7 @@ describe('cleaner — CleanerPage (jsdom project)', () => {
       harness.resolvers[0]?.({ ok: true, data: defaultPreview() });
     });
     await screen.findByText('Кандидаты на удаление');
+    expect(screen.getByRole('checkbox', { name: 'Корзина' })).toBeEnabled();
   });
 
   it('shows an explicit empty result without enabling deletion', async () => {
@@ -439,5 +443,50 @@ describe('cleaner — CleanerPage (jsdom project)', () => {
     expect(harness.unsubscribe).not.toHaveBeenCalled();
     unmount();
     expect(harness.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the confirmation dialog when the preview expires while it is open', async () => {
+    setup({
+      previews: [
+        makeCleanupPreview({
+          sessionId: 'session-1',
+          candidates: [
+            makePreviewCandidate({
+              id: 'a1',
+              path: PATH_A,
+              sizeBytes: 1024,
+              category: 'user-temp',
+            }),
+          ],
+          estimatedBytes: 1024,
+          expiresAt: Date.now() + 1200,
+          sources: [makeSource({ category: 'user-temp', candidateCount: 1, estimatedBytes: 1024 })],
+        }),
+        defaultPreview(),
+      ],
+    });
+    await renderReady();
+    select(PATH_A);
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить…' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // TTL истекает, пока диалог открыт: selection очищается — диалог закрывается,
+    // а не показывает «Будет удалено: 0 элементов» с активным подтверждением.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 3000 });
+    expect(window.api.cleaner.delete).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Предпросмотр устарел — выполните сканирование заново.')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Удалить…' })).toBeDisabled();
+
+    // флаг подтверждения сброшен: новый preview и выбор не открывают диалог сами
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Предпросмотр' }));
+    });
+    await screen.findByText('Кандидаты на удаление');
+    select(PATH_A);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить…' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });

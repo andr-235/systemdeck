@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CleanerCategoryPicker from './CleanerCategoryPicker';
 import CleanerConfirmDialog from './CleanerConfirmDialog';
 import CleanerStatusBadge from './CleanerStatusBadge';
@@ -9,6 +9,14 @@ function CleanerPage(): React.JSX.Element {
   const cleaner = useCleaner();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { state } = cleaner;
+  const selected = cleaner.selectedCandidates;
+  // Диалог открыт только при живом выделении: истечение предпросмотра очищает
+  // selection, и показывать «Будет удалено: 0 элементов» с активным подтверждением нельзя.
+  const dialogOpen = confirmOpen && selected.length > 0;
+
+  useEffect(() => {
+    if (confirmOpen && !dialogOpen) setConfirmOpen(false);
+  }, [confirmOpen, dialogOpen]);
 
   const closeDialog = (): void => setConfirmOpen(false);
   const confirmDelete = (): void => {
@@ -44,7 +52,7 @@ function CleanerPage(): React.JSX.Element {
       </section>
       <CleanerWorkspace cleaner={cleaner} onRequestDelete={() => setConfirmOpen(true)} />
       <CleanerConfirmDialog
-        open={confirmOpen}
+        open={dialogOpen}
         selected={cleaner.selectedCandidates}
         estimatedBytes={cleaner.selectedEstimatedBytes}
         onConfirm={confirmDelete}

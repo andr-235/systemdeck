@@ -21,7 +21,9 @@ function CleanerCategoryPicker({
 }: CleanerCategoryPickerProps): React.JSX.Element {
   return (
     <>
-      <fieldset className="sd-cleaner-fieldset" disabled={disabled}>
+      {/* busy тоже блокирует выбор: смена категорий во время сканирования
+          сделала бы показанный предпросмотр несоответствующим выбранным категориям */}
+      <fieldset className="sd-cleaner-fieldset" disabled={disabled || busy}>
         <legend className="sd-cleaner-legend">Категории для предпросмотра</legend>
         {CLEANER_CATEGORIES.map((category) => (
           <label key={category} className="sd-cleaner-option">

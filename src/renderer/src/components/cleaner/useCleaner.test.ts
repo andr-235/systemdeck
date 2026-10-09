@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCleaner } from './useCleaner';
-import { CLEANER_CATEGORIES } from './cleanerText';
+import { CLEANER_CATEGORIES, INVOKE_REJECTED_MESSAGE } from './cleanerText';
 import {
   makeCleanupPreview,
   makeCleanupReport,
@@ -16,6 +16,7 @@ import type { IpcResult } from '@shared/ipc/errors';
 
 type PreviewMock = AppAPI['cleaner']['preview'];
 type DeleteMock = AppAPI['cleaner']['delete'];
+type CancelMock = AppAPI['cleaner']['cancel'];
 
 type Capture = {
   push: (event: CleanupProgressEvent) => void;
@@ -24,11 +25,15 @@ type Capture = {
   setDelete: (implementation: DeleteMock) => void;
 };
 
-function captureCleaner(overrides: { preview?: PreviewMock; delete?: DeleteMock } = {}): Capture {
+function captureCleaner(
+  overrides: { preview?: PreviewMock; delete?: DeleteMock; cancel?: CancelMock } = {}
+): Capture {
   let previewImpl: PreviewMock =
     overrides.preview ?? (async () => ({ ok: true as const, data: makeCleanupPreview() }));
   let deleteImpl: DeleteMock =
     overrides.delete ?? (async () => ({ ok: true as const, data: { operationId: 'op-1' } }));
+  const cancelImpl: CancelMock =
+    overrides.cancel ?? (async () => ({ ok: true as const, data: undefined }));
   const capture: Capture = {
     push: () => undefined,
     unsubscribe: vi.fn(),
@@ -46,7 +51,7 @@ function captureCleaner(overrides: { preview?: PreviewMock; delete?: DeleteMock 
     }),
     cleanerPreview: vi.fn((request) => previewImpl(request)),
     cleanerDelete: vi.fn((request) => deleteImpl(request)),
-    cleanerCancel: vi.fn(async () => ({ ok: true as const, data: undefined })),
+    cleanerCancel: vi.fn((request) => cancelImpl(request)),
   });
   return capture;
 }
@@ -448,5 +453,79 @@ describe('cleaner — useCleaner (jsdom project)', () => {
     });
 
     expect(result.current.progressStale).toBe(true);
+  });
+
+  it('leaves the scanning state with a Russian message when the preview invoke rejects', async () => {
+    captureCleaner({
+      preview: () => Promise.reject(new Error('bridge down')),
+    });
+    const { result } = renderHook(() => useCleaner());
+
+    await act(async () => {
+      result.current.runPreview();
+    });
+
+    await waitFor(() => expect(result.current.state.status).toBe('failed'));
+    expect(result.current.state).toMatchObject({
+      status: 'failed',
+      stage: 'preview',
+      message: INVOKE_REJECTED_MESSAGE,
+      report: null,
+    });
+    // кнопка предпросмотра снова доступна: состояние не осталось в «scanning»
+    expect(result.current.state.status).not.toBe('scanning');
+  });
+
+  it('leaves the cleaning state with a Russian message when the delete invoke rejects', async () => {
+    captureCleaner({
+      preview: previewWith([makePreviewCandidate()]),
+      delete: () => Promise.reject(new Error('bridge down')),
+    });
+    const { result } = renderHook(() => useCleaner());
+    await previewAndReady(result);
+    await act(async () => {
+      result.current.toggleCandidate('c1');
+    });
+    await act(async () => {
+      result.current.startDelete();
+    });
+
+    await waitFor(() => expect(result.current.state.status).toBe('failed'));
+    expect(result.current.state).toMatchObject({
+      status: 'failed',
+      stage: 'delete',
+      message: INVOKE_REJECTED_MESSAGE,
+      report: null,
+      estimatedBytes: 1024,
+    });
+  });
+
+  it('resets cancelRequested when the cancel invoke rejects', async () => {
+    captureCleaner({
+      preview: previewWith([makePreviewCandidate()]),
+      cancel: () => Promise.reject(new Error('bridge down')),
+    });
+    const { result } = renderHook(() => useCleaner());
+    await previewAndReady(result);
+    await act(async () => {
+      result.current.toggleCandidate('c1');
+    });
+    await act(async () => {
+      result.current.startDelete();
+    });
+    await waitFor(() =>
+      expect(result.current.state).toMatchObject({ status: 'cleaning', operationId: 'op-1' })
+    );
+
+    await act(async () => {
+      result.current.requestCancel();
+    });
+
+    await waitFor(() =>
+      expect(result.current.state).toMatchObject({ status: 'cleaning', cancelRequested: false })
+    );
+    expect(window.api.cleaner.cancel).toHaveBeenCalledTimes(1);
+    // состояние не зависло в «Отмена запрошена…»
+    expect(result.current.state).toMatchObject({ status: 'cleaning' });
   });
 });
