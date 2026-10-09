@@ -27,6 +27,7 @@ export default defineConfig({
             'src/main/**/*.{test,spec}.{ts,tsx}',
             'src/shared/**/*.{test,spec}.{ts,tsx}',
             'src/preload/**/*.{test,spec}.{ts,tsx}',
+            '*.config.test.ts',
           ],
         },
       },
