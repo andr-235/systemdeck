@@ -260,18 +260,94 @@ export type CleanupCandidate = {
   protected: boolean;
 };
 
+/** Исход удаления одного кандидата: успех, пропуск на валидации или ошибка. */
 export type CleanupItemResult =
-  | { path: string; success: true; bytesFreed: number }
-  | { path: string; success: false; bytesFreed: number; error: IpcError };
+  | { path: string; outcome: 'deleted'; bytesFreed: number }
+  | { path: string; outcome: 'skipped'; bytesFreed: 0; code: string }
+  | { path: string; outcome: 'failed'; bytesFreed: 0; error: IpcError };
 
 export type CleanupReport = {
   /** Per-item записи без скрытия частичных неуспехов; сводка сходится с их суммой. */
   items: CleanupItemResult[];
   total: number;
-  succeeded: number;
+  deleted: number;
+  skipped: number;
   failed: number;
   freedBytes: number;
 };
+
+// --- Cleaner IPC (ADR 0017, issue #55) -------------------------------------------
+// Renderer передаёт только идентификаторы категорий и ID кандидатов действующей
+// preview-сессии; raw path в запросах удаления отсутствует.
+
+/** Кандидат preview-сессии: ID выдаёт Main, путь Renderer уже известен из превью. */
+export type CleanupPreviewCandidate = {
+  id: string;
+  path: string;
+  /** Оценочный размер байт на момент построения превью. */
+  sizeBytes: number;
+  category: CleanupCategory;
+};
+
+/** Статус источника (allow-корней одной категории) в ответе preview. */
+export type CleanupPreviewSource = {
+  category: CleanupCategory;
+  /** ok — обход завершён; partial — есть недоступные каталоги; empty — кандидатов нет. */
+  status: 'ok' | 'partial' | 'empty';
+  candidateCount: number;
+  estimatedBytes: number;
+  inaccessibleDirectories: number;
+};
+
+export type CleanerPreviewRequest = {
+  categories: CleanupCategory[];
+};
+
+export type CleanerPreviewResponse = {
+  sessionId: string;
+  candidates: CleanupPreviewCandidate[];
+  /** Сумма оценочных байтов по всем кандидатам (не фактически освобождаемых). */
+  estimatedBytes: number;
+  sources: CleanupPreviewSource[];
+  /** Epoch-ms истечения сессии; после — удаление невозможно (CLEAN_SESSION_NOT_FOUND). */
+  expiresAt: number;
+};
+
+export type CleanerDeleteRequest = {
+  sessionId: string;
+  candidateIds: string[];
+};
+
+export type CleanerDeleteResponse = {
+  /** Идентификатор операции: корреляция прогресса и идемпотентная отмена. */
+  operationId: string;
+};
+
+export type CleanerCancelRequest = {
+  operationId: string;
+};
+
+export type CleanerCancelResponse = void;
+
+export type CleanupProgressEvent =
+  | {
+      operationId: string;
+      sessionId: string;
+      status: 'running';
+      phase: 'validating' | 'deleting';
+      timestamp: number;
+      processed: number;
+      total: number;
+      freedBytes: number;
+    }
+  | {
+      operationId: string;
+      sessionId: string;
+      status: 'completed' | 'cancelled' | 'failed';
+      timestamp: number;
+      /** Отчёт по фактически обработанным элементам; необработанные не входят в items. */
+      report: CleanupReport;
+    };
 
 // --- Contract maps -------------------------------------------------------------
 
@@ -304,7 +380,22 @@ export type IpcContracts = {
                             request: StorageScanCancelRequest;
                             response: StorageScanCancelResponse;
                           }
-                        : never;
+                        : K extends typeof IPC_CHANNELS.cleanerPreview
+                          ? {
+                              request: CleanerPreviewRequest;
+                              response: CleanerPreviewResponse;
+                            }
+                          : K extends typeof IPC_CHANNELS.cleanerDelete
+                            ? {
+                                request: CleanerDeleteRequest;
+                                response: CleanerDeleteResponse;
+                              }
+                            : K extends typeof IPC_CHANNELS.cleanerCancel
+                              ? {
+                                  request: CleanerCancelRequest;
+                                  response: CleanerCancelResponse;
+                                }
+                              : never;
 };
 
 export type IpcPushContracts = {
@@ -314,7 +405,9 @@ export type IpcPushContracts = {
       ? ProcessSnapshot
       : K extends typeof IPC_PUSH_CHANNELS.storageScanProgress
         ? ScanProgressEvent
-        : never;
+        : K extends typeof IPC_PUSH_CHANNELS.cleanerProgress
+          ? CleanupProgressEvent
+          : never;
 };
 
 // Helper to extract request/response for a channel with full type-safety

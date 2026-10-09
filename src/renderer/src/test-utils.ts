@@ -17,6 +17,10 @@ type MockApiOverrides = Partial<{
   getScanResult: AppAPI['storage']['getScanResult'];
   cancelScan: AppAPI['storage']['cancelScan'];
   onScanProgress: AppAPI['storage']['onScanProgress'];
+  cleanerPreview: AppAPI['cleaner']['preview'];
+  cleanerDelete: AppAPI['cleaner']['delete'];
+  cleanerCancel: AppAPI['cleaner']['cancel'];
+  cleanerOnProgress: AppAPI['cleaner']['onProgress'];
 }>;
 
 export const emptyLiveSnapshot: LiveSnapshot = {
@@ -94,14 +98,27 @@ export function setMockApi(overrides: MockApiOverrides = {}): void {
     terminateProcess:
       overrides.terminateProcess ?? (async () => ({ ok: true as const, data: undefined })),
     storage: {
-      startScan:
-        overrides.startScan ?? (async () => ({ ok: true as const, data: undefined })),
-      getScanResult:
-        overrides.getScanResult ?? (async () => ({ ok: true as const, data: null })),
-      cancelScan:
-        overrides.cancelScan ?? (async () => ({ ok: true as const, data: undefined })),
+      startScan: overrides.startScan ?? (async () => ({ ok: true as const, data: undefined })),
+      getScanResult: overrides.getScanResult ?? (async () => ({ ok: true as const, data: null })),
+      cancelScan: overrides.cancelScan ?? (async () => ({ ok: true as const, data: undefined })),
       onScanProgress:
         overrides.onScanProgress ??
+        (() => () => {
+          /* noop */
+        }),
+    },
+    cleaner: {
+      preview:
+        overrides.cleanerPreview ??
+        (async () => ({
+          ok: true as const,
+          data: { sessionId: '', candidates: [], estimatedBytes: 0, sources: [], expiresAt: 0 },
+        })),
+      delete:
+        overrides.cleanerDelete ?? (async () => ({ ok: true as const, data: { operationId: '' } })),
+      cancel: overrides.cleanerCancel ?? (async () => ({ ok: true as const, data: undefined })),
+      onProgress:
+        overrides.cleanerOnProgress ??
         (() => () => {
           /* noop */
         }),

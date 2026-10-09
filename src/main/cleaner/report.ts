@@ -1,17 +1,24 @@
 import type { CleanupItemResult, CleanupReport } from '@shared/ipc/contracts';
 
-/** Per-item отчёт: частичные неуспехи сохраняются, сводка сходится с суммой. */
+/** Per-item отчёт: частичные неуспехи и пропуски сохраняются, сводка сходится с суммой. */
 export function buildCleanupReport(items: CleanupItemResult[]): CleanupReport {
-  let succeeded = 0;
+  let deleted = 0;
+  let skipped = 0;
   let failed = 0;
   let freedBytes = 0;
   for (const item of items) {
-    if (item.success) {
-      succeeded++;
-      freedBytes += item.bytesFreed;
-    } else {
-      failed++;
+    switch (item.outcome) {
+      case 'deleted':
+        deleted++;
+        freedBytes += item.bytesFreed;
+        break;
+      case 'skipped':
+        skipped++;
+        break;
+      case 'failed':
+        failed++;
+        break;
     }
   }
-  return { items: [...items], total: items.length, succeeded, failed, freedBytes };
+  return { items: [...items], total: items.length, deleted, skipped, failed, freedBytes };
 }
