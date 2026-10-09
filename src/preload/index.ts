@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type {
   AppAPI,
+  CleanerApi,
   CpuInfoApi,
   GpuInfoApi,
   LiveApi,
@@ -11,6 +12,12 @@ import type {
 import { IPC_CHANNELS, IPC_PUSH_CHANNELS } from '@shared/ipc/channels';
 import { toErrorParts } from '@shared/ipc/errors';
 import type {
+  CleanerCancelRequest,
+  CleanerDeleteRequest,
+  CleanerDeleteResponse,
+  CleanerPreviewRequest,
+  CleanerPreviewResponse,
+  CleanupProgressEvent,
   CpuInfoResponse,
   GpuInfoResponse,
   IpcResult,
@@ -65,6 +72,17 @@ const storage: StorageApi = {
     subscribePush<ScanProgressEvent>(IPC_PUSH_CHANNELS.storageScanProgress, callback),
 };
 
+const cleaner: CleanerApi = {
+  preview: (request: CleanerPreviewRequest): Promise<IpcResult<CleanerPreviewResponse>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.cleanerPreview, request),
+  delete: (request: CleanerDeleteRequest): Promise<IpcResult<CleanerDeleteResponse>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.cleanerDelete, request),
+  cancel: (request: CleanerCancelRequest): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.cleanerCancel, request),
+  onProgress: (callback: (event: CleanupProgressEvent) => void): Unsubscribe =>
+    subscribePush<CleanupProgressEvent>(IPC_PUSH_CHANNELS.cleanerProgress, callback),
+};
+
 const api: AppAPI = {
   ping: (request: PingRequest): Promise<IpcResult<{ version: string; matched: boolean }>> =>
     ipcRenderer.invoke(IPC_CHANNELS.ping, request),
@@ -81,6 +99,7 @@ const api: AppAPI = {
   onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void): Unsubscribe =>
     subscribePush<ProcessSnapshot>(IPC_PUSH_CHANNELS.processSnapshot, callback),
   storage,
+  cleaner,
 };
 
 if (process.contextIsolated) {

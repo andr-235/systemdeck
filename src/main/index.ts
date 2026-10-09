@@ -11,6 +11,7 @@ import { IPC_CHANNELS, IPC_PUSH_CHANNELS } from '@shared/ipc/channels';
 import { SHARED_CONTRACT_VERSION } from '@shared/api';
 import { LiveScheduler } from './monitoring/live/LiveScheduler';
 import { ScanManager } from './storage/ScanManager';
+import { CleanerManager } from './cleaner/CleanerManager';
 import { resolveCspHeaders } from './security/csp';
 
 initLogger();
@@ -171,7 +172,14 @@ app.whenReady().then(() => {
       }
     },
   });
-  registerIpcHandlers({ scheduler, scanManager });
+  const cleanerManager = new CleanerManager({
+    send: (event) => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(IPC_PUSH_CHANNELS.cleanerProgress, event);
+      }
+    },
+  });
+  registerIpcHandlers({ scheduler, scanManager, cleanerManager });
 
   // Температура — probe один раз при старте Main (ADR 0009): вывод о доступности
   // принимается до первого такта, ошибки прав/ACPI уже обработаны внутри.

@@ -104,9 +104,7 @@ describe('Renderer — treemap squarifyRects', () => {
     const area = rects.reduce((acc, r) => acc + r.width * r.height, 0);
     expect(area).toBeCloseTo(width * height);
     for (let i = 0; i < rects.length; i += 1) {
-      expect(rects[i]!.width * rects[i]!.height).toBeCloseTo(
-        (values[i]! / total) * width * height
-      );
+      expect(rects[i]!.width * rects[i]!.height).toBeCloseTo((values[i]! / total) * width * height);
     }
   });
 
@@ -128,9 +126,7 @@ describe('Renderer — treemap layoutTreemap', () => {
     const node = makeNode({
       sizeBytes: 60,
       filesBytes: 20,
-      children: [
-        makeNode({ name: 'a', path: 'C:\\a', sizeBytes: 40, children: [] }),
-      ],
+      children: [makeNode({ name: 'a', path: 'C:\\a', sizeBytes: 40, children: [] })],
     });
     const tiles = layoutTreemap(node, 10, 6);
     expect(tiles).toHaveLength(2);

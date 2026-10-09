@@ -32,15 +32,15 @@ tags: [refactor, ui, storage]
 
 - GOAL-001: Разбить StoragePage на модули-карточки с тестами и стилями
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-001 | `src/renderer/src/components/storage/StorageToolbar.tsx`: селект тома + кнопка Сканировать/Отменить/Заново (управление через пропсы) | ✅ | 2026-09-23 |
-| TASK-002 | `src/renderer/src/components/storage/StorageScanStatus.tsx`: scanning-прогресс / failed-alert / cancelled / idle-подсказка | ✅ | 2026-09-23 |
-| TASK-003 | `src/renderer/src/components/storage/StorageResultSummary.tsx`: 4 stat-карточки из ScanResult | ✅ | 2026-09-23 |
-| TASK-004 | `src/renderer/src/components/StorageScanView.tsx`: шапка (title + StatusBadge) + компоновка Toolbar/Status/Summary/Results-grid; `StoragePage.tsx` ужать до guards + выбор тома | ✅ | 2026-09-23 |
-| TASK-005 | `src/renderer/src/assets/main.css`: `.sd-card`, `.sd-storage-head`, `.sd-stat-grid`, `.sd-stat-card`, reduced-motion уже покрыт | ✅ | 2026-09-23 |
-| TASK-006 | Тесты: существующий `StoragePage.test.tsx` зелёный без правок текстов; +1 тест на 4 stat-карточки (colocated) | ✅ | 2026-09-23 |
-| TASK-007 | `npm run check:boundaries`, `npm run typecheck`, `npm run test` | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                                     | Completed | Date       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-001 | `src/renderer/src/components/storage/StorageToolbar.tsx`: селект тома + кнопка Сканировать/Отменить/Заново (управление через пропсы)                                            | ✅        | 2026-09-23 |
+| TASK-002 | `src/renderer/src/components/storage/StorageScanStatus.tsx`: scanning-прогресс / failed-alert / cancelled / idle-подсказка                                                      | ✅        | 2026-09-23 |
+| TASK-003 | `src/renderer/src/components/storage/StorageResultSummary.tsx`: 4 stat-карточки из ScanResult                                                                                   | ✅        | 2026-09-23 |
+| TASK-004 | `src/renderer/src/components/StorageScanView.tsx`: шапка (title + StatusBadge) + компоновка Toolbar/Status/Summary/Results-grid; `StoragePage.tsx` ужать до guards + выбор тома | ✅        | 2026-09-23 |
+| TASK-005 | `src/renderer/src/assets/main.css`: `.sd-card`, `.sd-storage-head`, `.sd-stat-grid`, `.sd-stat-card`, reduced-motion уже покрыт                                                 | ✅        | 2026-09-23 |
+| TASK-006 | Тесты: существующий `StoragePage.test.tsx` зелёный без правок текстов; +1 тест на 4 stat-карточки (colocated)                                                                   | ✅        | 2026-09-23 |
+| TASK-007 | `npm run check:boundaries`, `npm run typecheck`, `npm run test`                                                                                                                 | ✅        | 2026-09-23 |
 
 ## 3. Alternatives
 

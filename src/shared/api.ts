@@ -6,6 +6,10 @@
  */
 import type {
   IpcResultFor,
+  CleanerCancelRequest,
+  CleanerDeleteRequest,
+  CleanerPreviewRequest,
+  CleanupProgressEvent,
   LiveSnapshot,
   LiveSubscribeRequest,
   PingRequest,
@@ -50,6 +54,7 @@ export interface AppAPI {
   onLiveSnapshot: (callback: (snapshot: LiveSnapshot) => void) => Unsubscribe;
   onProcessSnapshot: (callback: (snapshot: ProcessSnapshot) => void) => Unsubscribe;
   storage: StorageApi;
+  cleaner: CleanerApi;
 }
 
 export interface StorageApi {
@@ -61,4 +66,18 @@ export interface StorageApi {
   onScanProgress: (callback: (event: ScanProgressEvent) => void) => Unsubscribe;
 }
 
-export const SHARED_CONTRACT_VERSION = 'sd-021' as const;
+/** Cleaner (ADR 0017): preview по категориям, удаление только по ID сессии, push-прогресс. */
+export interface CleanerApi {
+  preview: (
+    request: CleanerPreviewRequest
+  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.cleanerPreview>>;
+  delete: (
+    request: CleanerDeleteRequest
+  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.cleanerDelete>>;
+  cancel: (
+    request: CleanerCancelRequest
+  ) => Promise<IpcResultFor<typeof IPC_CHANNELS.cleanerCancel>>;
+  onProgress: (callback: (event: CleanupProgressEvent) => void) => Unsubscribe;
+}
+
+export const SHARED_CONTRACT_VERSION = 'sd-022' as const;
