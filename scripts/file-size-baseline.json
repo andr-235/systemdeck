@@ -2,5 +2,8 @@
   "App.tsx": 118,
   "components/ConfirmDialog.tsx": 84,
   "components/ProcessDetails.tsx": 138,
-  "components/ProcessPage.tsx": 215
+  "components/ProcessPage.tsx": 215,
+  "components/StorageScanView.tsx": 83,
+  "components/storage/StorageSidebar.tsx": 85,
+  "components/treemap/TreemapTile.tsx": 94
 }

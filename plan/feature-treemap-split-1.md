@@ -32,21 +32,21 @@ tags: [feature, refactor, treemap, process]
 
 - GOAL-001: Зафиксировать план и жёсткие гейты до рефакторинга
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-001 | Создать файл plan/feature-treemap-split-1.md по шаблону create-implementation-plan со статусом In progress, покрывающий REQ-001, REQ-002, REQ-003, REQ-004, CON-001 и CON-002 | ✅ | 2026-09-23 |
-| TASK-002 | Добавить в AGENTS.md раздел План и размер компонентов: план-файл обязателен до правок src, лимит 80 строк на файл компонента, один файл — одна ответственность, проверка длины перед коммитом | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                                                   | Completed | Date       |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-001 | Создать файл plan/feature-treemap-split-1.md по шаблону create-implementation-plan со статусом In progress, покрывающий REQ-001, REQ-002, REQ-003, REQ-004, CON-001 и CON-002                 | ✅        | 2026-09-23 |
+| TASK-002 | Добавить в AGENTS.md раздел План и размер компонентов: план-файл обязателен до правок src, лимит 80 строк на файл компонента, один файл — одна ответственность, проверка длины перед коммитом | ✅        | 2026-09-23 |
 
 ### Implementation Phase 2
 
 - GOAL-002: Разбить StorageTreemap на одноответственные модули без смены поведения
 
-| Task | Description | Completed | Date |
-|------|-------------|-----------|------|
-| TASK-003 | Создать src/renderer/src/components/treemap/treemapColor.ts: перенести treemapHue, tileFill, tileStroke из StorageTreemap.tsx, покрывает REQ-001 и GUD-001 | ✅ | 2026-09-23 |
-| TASK-004 | Создать src/renderer/src/components/treemap/useTreemapTrail.ts: перенести findChildByPath и состояние trail, current, canDrillDeeper, drillInto, jumpTo, сброс при смене tree, покрывает REQ-001 и PAT-001 | ✅ | 2026-09-23 |
-| TASK-005 | Создать TreemapBreadcrumb.tsx, TreemapTile.tsx, TreemapSvg.tsx и тонкий StorageTreemap.tsx-композитор в src/renderer/src/components/treemap/, удалить старый StorageTreemap.tsx, обновить импорт в StoragePage.tsx, покрывает REQ-001, REQ-003, GUD-001 и GUD-002 | ✅ | 2026-09-23 |
-| TASK-006 | Перенести и дополнить тесты: colocated StorageTreemap.test.tsx, unit-тесты treemapColor и useTreemapTrail, прогнать npm run check:boundaries, typecheck и test до зелёного, покрывает REQ-003 | ✅ | 2026-09-23 |
+| Task     | Description                                                                                                                                                                                                                                                       | Completed | Date       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| TASK-003 | Создать src/renderer/src/components/treemap/treemapColor.ts: перенести treemapHue, tileFill, tileStroke из StorageTreemap.tsx, покрывает REQ-001 и GUD-001                                                                                                        | ✅        | 2026-09-23 |
+| TASK-004 | Создать src/renderer/src/components/treemap/useTreemapTrail.ts: перенести findChildByPath и состояние trail, current, canDrillDeeper, drillInto, jumpTo, сброс при смене tree, покрывает REQ-001 и PAT-001                                                        | ✅        | 2026-09-23 |
+| TASK-005 | Создать TreemapBreadcrumb.tsx, TreemapTile.tsx, TreemapSvg.tsx и тонкий StorageTreemap.tsx-композитор в src/renderer/src/components/treemap/, удалить старый StorageTreemap.tsx, обновить импорт в StoragePage.tsx, покрывает REQ-001, REQ-003, GUD-001 и GUD-002 | ✅        | 2026-09-23 |
+| TASK-006 | Перенести и дополнить тесты: colocated StorageTreemap.test.tsx, unit-тесты treemapColor и useTreemapTrail, прогнать npm run check:boundaries, typecheck и test до зелёного, покрывает REQ-003                                                                     | ✅        | 2026-09-23 |
 
 ## 3. Alternatives
 

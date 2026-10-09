@@ -1,0 +1,4 @@
+# Prettier (prettier.config.mjs, endOfLine по умолчанию) требует LF в worktree;
+# без явного правила git раскладывает файлы в CRLF при core.autocrlf=true,
+# и format:check падает на свежем чекауте Windows.
+* text=auto eol=lf

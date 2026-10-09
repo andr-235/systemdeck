@@ -31,23 +31,55 @@ function StorageSidebar({ result }: StorageSidebarProps): React.JSX.Element {
           Данные могут быть неполными: недоступно каталогов: {result.inaccessibleDirectories}.
         </p>
       )}
-      <div role="tablist" aria-label="Детали хранилища" className="sd-tablist" onKeyDown={onKeyDown}>
+      <div
+        role="tablist"
+        aria-label="Детали хранилища"
+        className="sd-tablist"
+        onKeyDown={onKeyDown}
+      >
         {TAB_IDS.map((id, index) => (
-          <button key={id} type="button" role="tab" id={`${baseId}-${id}`}
-            aria-selected={active === id} aria-controls={`${baseId}-${id}-panel`}
-            tabIndex={active === id ? 0 : -1} className="sd-tab" onClick={() => setActive(id)}
-            ref={(el) => { tabRefs.current[index] = el; }}>
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`${baseId}-${id}`}
+            aria-selected={active === id}
+            aria-controls={`${baseId}-${id}-panel`}
+            tabIndex={active === id ? 0 : -1}
+            className="sd-tab"
+            onClick={() => setActive(id)}
+            ref={(el) => {
+              tabRefs.current[index] = el;
+            }}
+          >
             {TAB_LABELS[id]}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id={`${baseId}-files-panel`} aria-labelledby={`${baseId}-files`} hidden={active !== 'files'}>
-        <LargestFilesTable files={result.largestFiles} fileCount={result.fileCount}
-          inaccessibleDirectories={result.inaccessibleDirectories} />
+      <div
+        role="tabpanel"
+        id={`${baseId}-files-panel`}
+        aria-labelledby={`${baseId}-files`}
+        hidden={active !== 'files'}
+      >
+        <LargestFilesTable
+          files={result.largestFiles}
+          fileCount={result.fileCount}
+          inaccessibleDirectories={result.inaccessibleDirectories}
+        />
       </div>
-      <div role="tabpanel" id={`${baseId}-types-panel`} aria-labelledby={`${baseId}-types`} hidden={active !== 'types'}>
-        <TypeTotalsSummary totals={result.typeTotals} totalBytes={result.totalBytes}
-          fileCount={result.fileCount} inaccessibleDirectories={result.inaccessibleDirectories} />
+      <div
+        role="tabpanel"
+        id={`${baseId}-types-panel`}
+        aria-labelledby={`${baseId}-types`}
+        hidden={active !== 'types'}
+      >
+        <TypeTotalsSummary
+          totals={result.typeTotals}
+          totalBytes={result.totalBytes}
+          fileCount={result.fileCount}
+          inaccessibleDirectories={result.inaccessibleDirectories}
+        />
       </div>
     </>
   );

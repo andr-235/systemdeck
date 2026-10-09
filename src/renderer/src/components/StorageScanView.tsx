@@ -13,7 +13,11 @@ type StorageScanViewProps = {
   onSelectVolume: (volumeId: string) => void;
 };
 
-function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewProps): React.JSX.Element {
+function StorageScanView({
+  volumeId,
+  disks,
+  onSelectVolume,
+}: StorageScanViewProps): React.JSX.Element {
   const { state, startScan, cancelScan } = useStorageScan(volumeId);
   const scanning = state.status === 'scanning';
   return (
@@ -44,7 +48,11 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
         )}
       </section>
       <div className="sd-storage-layout">
-        <div className="sd-storage-treemap sd-card" aria-label="Карта занятого места" data-testid="storage-treemap">
+        <div
+          className="sd-storage-treemap sd-card"
+          aria-label="Карта занятого места"
+          data-testid="storage-treemap"
+        >
           {state.status === 'complete' ? (
             <StorageTreemap tree={state.result.tree} />
           ) : (
@@ -55,7 +63,11 @@ function StorageScanView({ volumeId, disks, onSelectVolume }: StorageScanViewPro
             </p>
           )}
         </div>
-        <aside className="sd-storage-sidebar sd-card" aria-label="Детали хранилища" data-testid="storage-sidebar">
+        <aside
+          className="sd-storage-sidebar sd-card"
+          aria-label="Детали хранилища"
+          data-testid="storage-sidebar"
+        >
           {state.status === 'complete' ? (
             <StorageSidebar result={state.result} />
           ) : (

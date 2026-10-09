@@ -32,7 +32,9 @@ describe('Renderer — StorageSidebar', () => {
     render(<StorageSidebar result={makeResult()} />);
     expect(screen.getByRole('heading', { name: 'Крупнейшие файлы и типы' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Крупнейшие файлы' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Сводка по типам файлов' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'Сводка по типам файлов' })
+    ).not.toBeInTheDocument();
     expect(screen.getByText('C:\\a.iso')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: 'По типам' }));
     expect(screen.getByRole('region', { name: 'Сводка по типам файлов' })).toBeInTheDocument();

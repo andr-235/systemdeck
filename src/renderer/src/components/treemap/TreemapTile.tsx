@@ -21,7 +21,12 @@ type TreemapTileProps = {
   onDrill: (path: string) => void;
 };
 
-function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps): React.JSX.Element {
+function TreemapTile({
+  tile,
+  totalBytes,
+  clickable,
+  onDrill,
+}: TreemapTileProps): React.JSX.Element {
   const { leaf } = tile;
   const isFiles = !leaf.dir;
   const share = totalBytes > 0 ? leaf.sizeBytes / totalBytes : 0;
@@ -43,12 +48,26 @@ function TreemapTile({ tile, totalBytes, clickable, onDrill }: TreemapTileProps)
         rx={TILE_RADIUS}
       />
       {showLabel && (
-        <text x={tile.x + TEXT_OFFSET_X} y={tile.y + LABEL_OFFSET_Y} fontSize={12} fill="var(--sd-color-foreground)" pointerEvents="none">
-          {leaf.label.length > MAX_LABEL_CHARS ? `${leaf.label.slice(0, MAX_LABEL_CHARS - 1)}…` : leaf.label}
+        <text
+          x={tile.x + TEXT_OFFSET_X}
+          y={tile.y + LABEL_OFFSET_Y}
+          fontSize={12}
+          fill="var(--sd-color-foreground)"
+          pointerEvents="none"
+        >
+          {leaf.label.length > MAX_LABEL_CHARS
+            ? `${leaf.label.slice(0, MAX_LABEL_CHARS - 1)}…`
+            : leaf.label}
         </text>
       )}
       {showSize && (
-        <text x={tile.x + TEXT_OFFSET_X} y={tile.y + SIZE_OFFSET_Y} fontSize={11} fill="var(--sd-color-foreground-dim)" pointerEvents="none">
+        <text
+          x={tile.x + TEXT_OFFSET_X}
+          y={tile.y + SIZE_OFFSET_Y}
+          fontSize={11}
+          fill="var(--sd-color-foreground-dim)"
+          pointerEvents="none"
+        >
           {formatBytes(leaf.sizeBytes)}
         </text>
       )}

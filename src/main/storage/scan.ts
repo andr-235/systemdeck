@@ -225,10 +225,7 @@ export async function scanTree(
   const state: WalkState = {
     largestFiles: new BoundedTopK<LargestFileEntry>(resolved.maxLargestFiles),
     typeTotals: new Map(
-      FILE_TYPE_CATEGORIES.map((category) => [
-        category,
-        { category, sizeBytes: 0, fileCount: 0 },
-      ])
+      FILE_TYPE_CATEGORIES.map((category) => [category, { category, sizeBytes: 0, fileCount: 0 }])
     ),
     scannedEntries: 0,
     scannedBytes: 0,
