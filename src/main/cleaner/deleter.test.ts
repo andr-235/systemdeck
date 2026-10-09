@@ -2,16 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CleanupPreviewCandidate } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { runCleanup, type CleanerDeleteFs } from './deleter';
-import { CLEANER_RULES } from './rules';
+import { cleanerRules } from './rules';
 import { windowsDir } from './systemRoots';
 
-const userRoot = CLEANER_RULES.find((rule) => rule.category === 'user-temp')!.allowRoot;
+const userRoot = cleanerRules().find((rule) => rule.category === 'user-temp')!.allowRoot;
+const PREVIEW_MTIME = 1_700_000_000_000;
 
-function candidate(path: string): CleanupPreviewCandidate {
-  return { id: 'c1', path, sizeBytes: 1, category: 'user-temp' };
+function candidate(path: string, sizeBytes = 1): CleanupPreviewCandidate {
+  return { id: 'c1', path, sizeBytes, category: 'user-temp', mtimeMs: PREVIEW_MTIME };
 }
 
-type FileSpec = { size?: number; symlink?: boolean };
+type FileSpec = { size?: number; mtimeMs?: number; symlink?: boolean };
 
 function deleteFsStub(
   files: Record<string, FileSpec>,
@@ -30,7 +31,8 @@ function deleteFsStub(
           throw new Error('ENOENT');
         }
         return {
-          size: spec.size ?? 0,
+          size: spec.size ?? 1,
+          mtimeMs: spec.mtimeMs ?? PREVIEW_MTIME,
           isFile: () => !spec.symlink,
           isSymbolicLink: () => spec.symlink === true,
         };
@@ -51,7 +53,7 @@ describe('cleanup deleter', () => {
     const path = `${userRoot}\\a.tmp`;
     const { fs, unlinked } = deleteFsStub({ [path]: { size: 7 } });
     const processed: number[] = [];
-    const items = await runCleanup([candidate(path)], {
+    const items = await runCleanup([candidate(path, 7)], {
       fs,
       isCancelled: () => false,
       onItem: (_item, count) => processed.push(count),
@@ -104,6 +106,23 @@ describe('cleanup deleter', () => {
     expect(unlinked).toEqual([]);
   });
 
+  it('skips an entry whose size or mtime changed after the preview', async () => {
+    const resizedPath = `${userRoot}\\resized.tmp`;
+    const touchedPath = `${userRoot}\\touched.tmp`;
+    const untouchedPath = `${userRoot}\\kept.tmp`;
+    const { fs, unlinked } = deleteFsStub({
+      [resizedPath]: { size: 999 },
+      [touchedPath]: { mtimeMs: PREVIEW_MTIME + 5_000 },
+      [untouchedPath]: { size: 1 },
+    });
+    const items = await runCleanup(
+      [candidate(resizedPath), candidate(touchedPath), candidate(untouchedPath)],
+      { fs, isCancelled: () => false }
+    );
+    expect(items.map((item) => item.outcome)).toEqual(['skipped', 'skipped', 'deleted']);
+    expect(unlinked).toEqual([untouchedPath]);
+  });
+
   it('keeps an unlink failure as a per-item failure without aborting the run', async () => {
     const lockedPath = `${userRoot}\\locked.tmp`;
     const freePath = `${userRoot}\\free.tmp`;
@@ -111,7 +130,7 @@ describe('cleanup deleter', () => {
       { [lockedPath]: { size: 3 }, [freePath]: { size: 4 } },
       { [lockedPath]: 'EPERM' }
     );
-    const items = await runCleanup([candidate(lockedPath), candidate(freePath)], {
+    const items = await runCleanup([candidate(lockedPath, 3), candidate(freePath, 4)], {
       fs,
       isCancelled: () => false,
     });
@@ -144,7 +163,7 @@ describe('cleanup deleter', () => {
     const path = `${userRoot}\\a.tmp`;
     const { fs } = deleteFsStub({ [path]: { size: 5 } });
     const onItem = vi.fn();
-    await runCleanup([candidate(path)], { fs, isCancelled: () => false, onItem });
+    await runCleanup([candidate(path, 5)], { fs, isCancelled: () => false, onItem });
     expect(onItem).toHaveBeenCalledWith({ path, outcome: 'deleted', bytesFreed: 5 }, 1, 5);
   });
 });

@@ -258,6 +258,8 @@ export type CleanupCandidate = {
   category: CleanupCategory;
   /** Флаг защищённости: защищённое никогда не попадает в кандидаты (REQ-004). */
   protected: boolean;
+  /** Epoch-ms изменения файла; отсутствует, если stat не удался (issue #56). */
+  mtimeMs?: number;
 };
 
 /** Исход удаления одного кандидата: успех, пропуск на валидации или ошибка. */
@@ -287,13 +289,20 @@ export type CleanupPreviewCandidate = {
   /** Оценочный размер байт на момент построения превью. */
   sizeBytes: number;
   category: CleanupCategory;
+  /** Параметры файла на момент превью: удаление сверяет их повторно (issue #56). */
+  mtimeMs?: number;
 };
 
 /** Статус источника (allow-корней одной категории) в ответе preview. */
 export type CleanupPreviewSource = {
   category: CleanupCategory;
-  /** ok — обход завершён; partial — есть недоступные каталоги; empty — кандидатов нет. */
-  status: 'ok' | 'partial' | 'empty';
+  /** ok — обход завершён; partial — есть недоступные каталоги; empty — кандидатов нет;
+   *  unavailable — источник прочитать нельзя или корни не определены (issue #56). */
+  status: 'ok' | 'partial' | 'empty' | 'unavailable';
+  /** Человекочитаемая причина недоступности/частичного доступа; отсутствует для ok/empty. */
+  reason?: string;
+  /** Минимальный возраст файла в часах из конфигурации правила; нет — не применяется. */
+  minAgeHours?: number;
   candidateCount: number;
   estimatedBytes: number;
   inaccessibleDirectories: number;

@@ -3,10 +3,16 @@ import type { CleanupItemResult, CleanupPreviewCandidate } from '@shared/ipc/con
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { toCleanupIpcError } from './errors';
 import { isDeletionAllowed } from './candidates';
+import { cleanerRules, type CleanupRule } from './rules';
 
 /** Граница ФС удаления: node-fs по умолчанию, fake для тестов (прецедент ScanFs). */
 export interface CleanerDeleteFs {
-  lstat(path: string): Promise<{ size: number; isFile(): boolean; isSymbolicLink(): boolean }>;
+  lstat(path: string): Promise<{
+    size: number;
+    mtimeMs: number;
+    isFile(): boolean;
+    isSymbolicLink(): boolean;
+  }>;
   unlink(path: string): Promise<void>;
 }
 
@@ -15,6 +21,7 @@ export const nodeCleanerDeleteFs: CleanerDeleteFs = {
     const info = await lstat(path);
     return {
       size: info.size,
+      mtimeMs: info.mtimeMs,
       isFile: () => info.isFile(),
       isSymbolicLink: () => info.isSymbolicLink(),
     };
@@ -27,6 +34,7 @@ export const nodeCleanerDeleteFs: CleanerDeleteFs = {
 export type RunCleanupDeps = {
   isCancelled: () => boolean;
   fs?: CleanerDeleteFs;
+  rules?: readonly CleanupRule[];
   /** Вызывается после каждого обработанного элемента: накопление отчёта и прогресс. */
   onItem?: (item: CleanupItemResult, processed: number, freedBytes: number) => void;
 };
@@ -37,13 +45,14 @@ export async function runCleanup(
   deps: RunCleanupDeps
 ): Promise<CleanupItemResult[]> {
   const fs = deps.fs ?? nodeCleanerDeleteFs;
+  const rules = deps.rules ?? cleanerRules();
   const items: CleanupItemResult[] = [];
   let freedBytes = 0;
   for (const candidate of selected) {
     if (deps.isCancelled()) {
       break;
     }
-    const item = await deleteOne(candidate.path, fs);
+    const item = await deleteOne(candidate, fs, rules);
     items.push(item);
     if (item.outcome === 'deleted') {
       freedBytes += item.bytesFreed;
@@ -53,8 +62,24 @@ export async function runCleanup(
   return items;
 }
 
-async function deleteOne(path: string, fs: CleanerDeleteFs): Promise<CleanupItemResult> {
-  const verdict = isDeletionAllowed(path);
+/** Параметры файла обязаны совпасть с превью: иначе файл изменился после preview (issue #56). */
+function matchesPreview(
+  candidate: CleanupPreviewCandidate,
+  info: { size: number; mtimeMs: number }
+): boolean {
+  if (info.size !== candidate.sizeBytes) {
+    return false;
+  }
+  return candidate.mtimeMs === undefined || info.mtimeMs === candidate.mtimeMs;
+}
+
+async function deleteOne(
+  candidate: CleanupPreviewCandidate,
+  fs: CleanerDeleteFs,
+  rules: readonly CleanupRule[]
+): Promise<CleanupItemResult> {
+  const path = candidate.path;
+  const verdict = isDeletionAllowed(path, rules);
   if (!verdict.allowed) {
     return { path, outcome: 'skipped', bytesFreed: 0, code: verdict.code };
   }
@@ -65,7 +90,7 @@ async function deleteOne(path: string, fs: CleanerDeleteFs): Promise<CleanupItem
     // Файл исчез или недоступен после preview: подмена/TOCTOU — ничего не удаляем.
     return { path, outcome: 'skipped', bytesFreed: 0, code: IPC_ERROR_CODES.CLEAN_ENTRY_INVALID };
   }
-  if (info.isSymbolicLink() || !info.isFile()) {
+  if (info.isSymbolicLink() || !info.isFile() || !matchesPreview(candidate, info)) {
     return { path, outcome: 'skipped', bytesFreed: 0, code: IPC_ERROR_CODES.CLEAN_ENTRY_INVALID };
   }
   try {

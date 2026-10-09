@@ -80,4 +80,4 @@ export interface CleanerApi {
   onProgress: (callback: (event: CleanupProgressEvent) => void) => Unsubscribe;
 }
 
-export const SHARED_CONTRACT_VERSION = 'sd-022' as const;
+export const SHARED_CONTRACT_VERSION = 'sd-023' as const;
