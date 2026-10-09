@@ -1,7 +1,7 @@
 import type { CleanupItemResult, CleanupPreviewSource } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
 import { toCleanupIpcError } from './errors';
-import { isRecycleVolumePath } from './rules';
+import { cleanerRules, isRecycleVolumePath, type CleanupRule } from './rules';
 import type { RecycleShell } from './recycleShell';
 
 /** Агрегированный кандидат корзины: путь обозначает корень корзины тома, не файл. */
@@ -36,8 +36,18 @@ function recyclePathFor(volumeRoot: string): string {
 /**
  * Preview корзины только через Shell: один агрегат на опрошенный том; том с неизвестным
  * размером кандидатом не становится — неизвестное не подменяется оценкой (issue #57).
+ * Без recycle-правила в наборе источник — `unavailable`, кандидаты не создаются.
  */
-export async function buildRecyclePreview(shell: RecycleShell): Promise<RecyclePreview> {
+export async function buildRecyclePreview(
+  shell: RecycleShell,
+  rules: readonly CleanupRule[] = cleanerRules()
+): Promise<RecyclePreview> {
+  if (!rules.some((rule) => rule.kind === 'recycle-volume')) {
+    return {
+      candidates: [],
+      source: source('unavailable', 0, 0, 'Корзина не входит в выбранные правила очистки'),
+    };
+  }
   let volumes: string[];
   try {
     volumes = await shell.listVolumes();

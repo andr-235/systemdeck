@@ -6,7 +6,7 @@ import { volumeLetter, type RecycleShell, type RecycleVolumeState } from './recy
 type ShellState = {
   volumes?: string[];
   listError?: string;
-  states?: Record<string, RecycleVolumeState | Error>;
+  states?: Record<string, RecycleVolumeState>;
   clearErrors?: Record<string, string>;
 };
 
@@ -27,11 +27,7 @@ function fakeShell(state: ShellState = {}): {
     },
     query: async (volumeRoot) => {
       queried.push(volumeRoot);
-      const outcome = state.states?.[volumeRoot];
-      if (outcome instanceof Error) {
-        throw outcome;
-      }
-      return outcome ?? { ok: false, reason: 'нет данных по тому' };
+      return state.states?.[volumeRoot] ?? { ok: false, reason: 'нет данных по тому' };
     },
     clear: async (volumeRoot) => {
       cleared.push(volumeRoot);
@@ -49,6 +45,15 @@ function measured(sizeBytes: number, itemCount: number): RecycleVolumeState {
 }
 
 describe('recycle preview', () => {
+  it('reports unavailable without touching the shell when the rules exclude recycle', async () => {
+    const { shell, queried } = fakeShell({ states: { 'C:\\': measured(100, 1) } });
+    const preview = await buildRecyclePreview(shell, []);
+    expect(preview.candidates).toHaveLength(0);
+    expect(preview.source).toMatchObject({ status: 'unavailable', candidateCount: 0 });
+    expect(preview.source.reason).toContain('правила');
+    expect(queried).toHaveLength(0);
+  });
+
   it('reports unavailable when the shell cannot list volumes', async () => {
     const { shell } = fakeShell({ listError: 'WMI доступен только на Windows' });
     const preview = await buildRecyclePreview(shell);

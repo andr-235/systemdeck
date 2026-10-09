@@ -1,7 +1,7 @@
 import { lstat, unlink } from 'node:fs/promises';
 import type { CleanupItemResult, CleanupPreviewCandidate } from '@shared/ipc/contracts';
 import { IPC_ERROR_CODES } from '@shared/ipc/errors';
-import { toCleanupIpcError } from './errors';
+import { errorCode, toCleanupIpcError } from './errors';
 import { isDeletionAllowed } from './candidates';
 import { clearRecycleVolume } from './recycleBin';
 import { cleanerRules, findCleanupRule, type CleanupRule } from './rules';
@@ -113,9 +113,4 @@ async function deleteOne(
     return { path, outcome: 'failed', bytesFreed: 0, error: toCleanupIpcError(error) };
   }
   return { path, outcome: 'deleted', bytesFreed: info.size };
-}
-
-function errorCode(error: unknown): string | undefined {
-  const code = (error as { code?: unknown }).code;
-  return typeof code === 'string' ? code : undefined;
 }

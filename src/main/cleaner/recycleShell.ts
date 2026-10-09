@@ -11,7 +11,10 @@ export type RecycleVolumeState =
 export interface RecycleShell {
   /** Fixed-тома Windows (`C:\` и т.п.): корни, для которых Shell опрашивает корзину. */
   listVolumes(): Promise<string[]>;
-  /** Замер корзины тома: факт или явный отказ, без оценок. */
+  /**
+   * Замер корзины тома: факт или явный отказ, без оценок.
+   * Контракт — никогда не бросает: отказ возвращается как `ok: false`.
+   */
   query(volumeRoot: string): Promise<RecycleVolumeState>;
   /** Агрегированная очистка корзины одного тома целиком. */
   clear(volumeRoot: string): Promise<void>;

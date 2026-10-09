@@ -66,7 +66,7 @@ async function collectCategory(
 ): Promise<{ candidates: CleanupCandidateDraft[]; source: CleanupPreviewSource }> {
   // Корзина — агрегат по томам через Shell: файловый обход её корня не выполняется (issue #57).
   if (category === 'recycle-bin') {
-    const { candidates, source } = await buildRecyclePreview(context.shell);
+    const { candidates, source } = await buildRecyclePreview(context.shell, context.rules);
     return { candidates: candidates.map(toDraft), source };
   }
   const roots = rootsForCategory(category, context.rules);
