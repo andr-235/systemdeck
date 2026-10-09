@@ -14,9 +14,11 @@ import { buildCleanupPreview } from './preview';
 import { PreviewSessionStore, type PreviewSession } from './previewSession';
 import { CleanupProgressEmitter } from './progress';
 import { buildCleanupReport } from './report';
-import { cleanerRules } from './rules';
+import { resolveCleanupRules } from './resolveRules';
+import type { CleanupRule } from './rules';
 import type { RecycleShell } from './recycleShell';
-import type { CleanerFs } from './walker';
+import type { Env } from './systemRoots';
+import { nodeCleanerFs, type CleanerFs } from './walker';
 
 const logger = getLogger('cleaner');
 
@@ -32,6 +34,8 @@ export type CleanerManagerDeps = {
   previewFs?: CleanerFs;
   deleteFs?: CleanerDeleteFs;
   recycleShell?: RecycleShell;
+  /** Снимок окружения для обнаружения профилей браузеров (PAT-001); по умолчанию process.env. */
+  env?: Env;
 };
 
 function cleanerError(code: string, message: string): Error {
@@ -45,8 +49,14 @@ export class CleanerManager {
   private readonly previewFs: CleanerFs | undefined;
   private readonly deleteFs: CleanerDeleteFs | undefined;
   private readonly recycleShell: RecycleShell | undefined;
+  private readonly env: Env;
   private readonly randomId: () => string;
   private active: ActiveOperation | null = null;
+  /**
+   * Резерв операции, которая стартует: закрывает окно между первым `await` `startDelete`
+   * и установкой `active`, когда preview успел бы создать новую сессию и подменить выбор.
+   */
+  private starting = false;
 
   constructor(deps: CleanerManagerDeps) {
     this.sessions = new PreviewSessionStore({ ttlMs: deps.sessionTtlMs, now: deps.now });
@@ -66,11 +76,12 @@ export class CleanerManager {
     this.previewFs = deps.previewFs;
     this.deleteFs = deps.deleteFs;
     this.recycleShell = deps.recycleShell;
+    this.env = deps.env ?? process.env;
     this.randomId = deps.randomId ?? randomUUID;
   }
 
   isActive(): boolean {
-    return this.active !== null;
+    return this.active !== null || this.starting;
   }
 
   /** Превью по категориям; во время удаления отклоняется (REQ-005). */
@@ -78,6 +89,7 @@ export class CleanerManager {
     this.assertNoActive('Операция очистки уже выполняется');
     const { candidates, sources } = await buildCleanupPreview(categories, this.previewFs, {
       recycleShell: this.recycleShell,
+      env: this.env,
     });
     // Превью собиралось долго: если удаление стартовало за это время — сессию не создаём.
     this.assertNoActive('Операция очистки уже выполняется');
@@ -85,7 +97,10 @@ export class CleanerManager {
   }
 
   /** Старт удаления: только sessionId + ID кандидатов, raw path отсутствует (SEC-001). */
-  startDelete(request: { sessionId: string; candidateIds: string[] }): { operationId: string } {
+  async startDelete(request: {
+    sessionId: string;
+    candidateIds: string[];
+  }): Promise<{ operationId: string }> {
     this.assertNoActive('Операция очистки уже выполняется');
     const session = this.sessions.getActive(request.sessionId);
     if (!session) {
@@ -95,18 +110,25 @@ export class CleanerManager {
       );
     }
     const selected = this.resolveSelected(session, request.candidateIds);
-    const rules = cleanerRules();
-    for (const candidate of selected) {
-      const verdict = isDeletionAllowed(candidate.path, rules);
-      if (!verdict.allowed) {
-        throw cleanerError(verdict.code, 'Выбранный кандидат более не подлежит удалению');
+    // Резерв синхронно, до первого await: обнаружение профилей ещё выполняется, а preview
+    // уже не должен успеть создать новую сессию и подменить выбранный набор (issue #58).
+    this.starting = true;
+    try {
+      const { rules } = await resolveCleanupRules(this.previewFs ?? nodeCleanerFs, this.env);
+      for (const candidate of selected) {
+        const verdict = isDeletionAllowed(candidate.path, rules);
+        if (!verdict.allowed) {
+          throw cleanerError(verdict.code, 'Выбранный кандидат более не подлежит удалению');
+        }
       }
+      const operationId = this.randomId();
+      const active: ActiveOperation = { operationId, sessionId: session.id, cancelled: false };
+      this.active = active;
+      void this.runOperation(active, selected, rules);
+      return { operationId };
+    } finally {
+      this.starting = false;
     }
-    const operationId = this.randomId();
-    const active: ActiveOperation = { operationId, sessionId: session.id, cancelled: false };
-    this.active = active;
-    void this.runOperation(active, selected);
-    return { operationId };
   }
 
   /** Идемпотентная отмена: чужой/завершённый operationId — безопасный no-op (REQ-007). */
@@ -119,7 +141,7 @@ export class CleanerManager {
   }
 
   private assertNoActive(message: string): void {
-    if (this.active) {
+    if (this.active !== null || this.starting) {
       throw cleanerError(IPC_ERROR_CODES.CLEAN_ALREADY_ACTIVE, message);
     }
   }
@@ -158,7 +180,8 @@ export class CleanerManager {
 
   private async runOperation(
     active: ActiveOperation,
-    selected: CleanupPreviewCandidate[]
+    selected: CleanupPreviewCandidate[],
+    rules: readonly CleanupRule[]
   ): Promise<void> {
     const total = selected.length;
     const items: CleanupItemResult[] = [];
@@ -187,6 +210,7 @@ export class CleanerManager {
         isCancelled: () => active.cancelled,
         fs: this.deleteFs,
         recycleShell: this.recycleShell,
+        rules,
         onItem: (item, processed, freed) => {
           items.push(item);
           freedBytes = freed;

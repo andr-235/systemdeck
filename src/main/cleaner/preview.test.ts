@@ -9,6 +9,14 @@ import type { CleanerDirEntry, CleanerFs } from './walker';
 const OLD_MTIME = Date.now() - 48 * 3_600_000;
 const YOUNG_MTIME = Date.now() - 60_000;
 
+/** Мок-пути браузеров для обнаружения профилей (issue #58): реальная ФС не трогается. */
+const BROWSER_ENV = {
+  LOCALAPPDATA: 'C:\\Users\\alice\\AppData\\Local',
+  APPDATA: 'C:\\Users\\alice\\AppData\\Roaming',
+};
+const CHROME_BASE = `${BROWSER_ENV.LOCALAPPDATA}\\Google\\Chrome\\User Data`;
+const EDGE_BASE = `${BROWSER_ENV.LOCALAPPDATA}\\Microsoft\\Edge\\User Data`;
+
 function entry(name: string, kind: 'file' | 'dir'): CleanerDirEntry {
   return {
     name,
@@ -57,7 +65,7 @@ function fakeFs(
       }
       const children = tree[path];
       if (!children) {
-        throw new Error(`NO_SUCH_DIR ${path}`);
+        throw Object.assign(new Error(`NO_SUCH_DIR ${path}`), { code: 'ENOENT' });
       }
       return children.map(([name, kind]) => entry(name, kind));
     },
@@ -172,34 +180,149 @@ describe('cleanup preview', () => {
     expect(preview.sources[0].reason).toContain('D:');
   });
 
-  it('does not attribute candidates of a foreign category to the walked source', async () => {
-    const browserRoot = ruleRoot('browser-cache');
+  it('builds browser-cache candidates from an exact cache root with profile metadata', async () => {
+    const cacheRoot = 'C:\\Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache';
+    const rules: CleanupRule[] = [
+      {
+        kind: 'file',
+        category: 'browser-cache',
+        allowRoot: cacheRoot,
+        browser: 'chrome',
+        profile: 'Default',
+        cacheKind: 'Cache',
+      },
+    ];
     const fs = fakeFs(
       {
-        [browserRoot]: [
-          ['Temp', 'dir'],
-          ['Chrome', 'dir'],
+        [cacheRoot]: [
+          ['data_0', 'file'],
+          ['Cache_Data', 'dir'],
         ],
-        [`${browserRoot}\\Temp`]: [['x.tmp', 'file']],
-        [`${browserRoot}\\Chrome`]: [['Cache', 'dir']],
-        [`${browserRoot}\\Chrome\\Cache`]: [['data', 'file']],
+        [`${cacheRoot}\\Cache_Data`]: [['f_1', 'file']],
       },
-      {
-        [`${browserRoot}\\Temp\\x.tmp`]: 100,
-        [`${browserRoot}\\Chrome\\Cache\\data`]: 50,
-      }
+      { [`${cacheRoot}\\data_0`]: 50, [`${cacheRoot}\\Cache_Data\\f_1`]: 20 }
     );
-    const preview = await buildCleanupPreview(['browser-cache'], fs);
-    // x.tmp классифицируется как user-temp и в источник browser-cache не входит.
+    const preview = await buildCleanupPreview(['browser-cache'], fs, { rules });
     expect(preview.candidates).toEqual([
       {
-        path: `${browserRoot}\\Chrome\\Cache\\data`,
+        path: `${cacheRoot}\\data_0`,
         sizeBytes: 50,
         category: 'browser-cache',
         mtimeMs: OLD_MTIME,
+        browser: 'chrome',
+        profile: 'Default',
+        cacheKind: 'Cache',
+      },
+      {
+        path: `${cacheRoot}\\Cache_Data\\f_1`,
+        sizeBytes: 20,
+        category: 'browser-cache',
+        mtimeMs: OLD_MTIME,
+        browser: 'chrome',
+        profile: 'Default',
+        cacheKind: 'Cache',
       },
     ]);
-    expect(preview.sources[0]).toMatchObject({ candidateCount: 1, estimatedBytes: 50 });
+    expect(preview.sources[0]).toMatchObject({
+      category: 'browser-cache',
+      status: 'ok',
+      candidateCount: 2,
+      estimatedBytes: 70,
+      inaccessibleDirectories: 0,
+    });
+    expect(preview.sources[0].minAgeHours).toBeUndefined();
+  });
+
+  it('reports the browser source as empty when no browser is installed', async () => {
+    const preview = await buildCleanupPreview(['browser-cache'], fakeFs({}, {}), {
+      env: BROWSER_ENV,
+    });
+    expect(preview.candidates).toEqual([]);
+    expect(preview.sources[0]).toMatchObject({
+      category: 'browser-cache',
+      status: 'empty',
+      candidateCount: 0,
+    });
+    expect(preview.sources[0].reason).toBeUndefined();
+  });
+
+  it('reports the browser source unavailable when the environment is broken', async () => {
+    const preview = await buildCleanupPreview(['browser-cache'], fakeFs({}, {}), { env: {} });
+    expect(preview.sources[0]).toMatchObject({ status: 'unavailable', candidateCount: 0 });
+    expect(preview.sources[0].reason).toContain('переменные окружения');
+  });
+
+  it('reports the browser source unavailable with the reason when browser directories are denied', async () => {
+    const fs = fakeFs({ [CHROME_BASE]: [['Default', 'dir']] }, {}, [CHROME_BASE]);
+    const preview = await buildCleanupPreview(['browser-cache'], fs, { env: BROWSER_ENV });
+    expect(preview.sources[0]).toMatchObject({ status: 'unavailable', candidateCount: 0 });
+    expect(preview.sources[0].reason).toContain('права администратора');
+  });
+
+  it('keeps the browser source partial when one profile tree is denied and another is found', async () => {
+    const cacheRoot = `${CHROME_BASE}\\Default\\Cache`;
+    const fs = fakeFs(
+      {
+        [CHROME_BASE]: [['Default', 'dir']],
+        [`${CHROME_BASE}\\Default`]: [
+          ['Preferences', 'file'],
+          ['Cache', 'dir'],
+        ],
+        [cacheRoot]: [],
+      },
+      {},
+      [EDGE_BASE]
+    );
+    const preview = await buildCleanupPreview(['browser-cache'], fs, { env: BROWSER_ENV });
+    expect(preview.sources[0]).toMatchObject({ status: 'partial', candidateCount: 0 });
+    expect(preview.sources[0].reason).toContain('права администратора');
+  });
+
+  it('reports an available browser source without cache files as empty, not unavailable', async () => {
+    const cacheRoot = `${CHROME_BASE}\\Default\\Cache`;
+    const fs = fakeFs(
+      {
+        [CHROME_BASE]: [['Default', 'dir']],
+        [`${CHROME_BASE}\\Default`]: [
+          ['Preferences', 'file'],
+          ['Cache', 'dir'],
+        ],
+        [cacheRoot]: [],
+      },
+      {}
+    );
+    const preview = await buildCleanupPreview(['browser-cache'], fs, { env: BROWSER_ENV });
+    expect(preview.candidates).toEqual([]);
+    expect(preview.sources[0]).toMatchObject({
+      status: 'empty',
+      candidateCount: 0,
+      estimatedBytes: 0,
+    });
+    expect(preview.sources[0].reason).toBeUndefined();
+  });
+
+  it('keeps a candidate of another category out of the walked source', async () => {
+    // Пересечение корней правил: файл лежит в обойдённом корне, но правило отдаёт его
+    // чужой категории — он не должен попасть в кандидаты и статистику своей (issue #58).
+    const root = 'C:\\Sandbox\\Temp';
+    const rules: CleanupRule[] = [
+      { kind: 'file', category: 'log-files', allowRoot: root, pattern: /\.log$/ },
+      { kind: 'file', category: 'user-temp', allowRoot: root, pattern: /\.tmp$/ },
+    ];
+    const fs = fakeFs(
+      {
+        [root]: [
+          ['x.log', 'file'],
+          ['x.tmp', 'file'],
+        ],
+      },
+      { [`${root}\\x.log`]: 5, [`${root}\\x.tmp`]: 7 }
+    );
+    const preview = await buildCleanupPreview(['user-temp'], fs, { rules });
+    expect(preview.candidates).toEqual([
+      { path: `${root}\\x.tmp`, sizeBytes: 7, category: 'user-temp', mtimeMs: OLD_MTIME },
+    ]);
+    expect(preview.sources[0]).toMatchObject({ category: 'user-temp', candidateCount: 1 });
   });
 
   it('marks a source partial when directories are inaccessible', async () => {

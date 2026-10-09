@@ -47,7 +47,7 @@ describe('cleaner temp integration on the real file system', () => {
               mtimeMs: first.mtimeMs,
             },
           ],
-          { fs: nodeCleanerDeleteFs, isCancelled: () => false }
+          { fs: nodeCleanerDeleteFs, isCancelled: () => false, rules: cleanerRules() }
         );
         expect(items).toEqual([{ path: oldPath, outcome: 'deleted', bytesFreed: 8 }]);
         await expect(stat(oldPath)).rejects.toThrow();

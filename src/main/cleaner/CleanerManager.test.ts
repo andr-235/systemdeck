@@ -38,6 +38,15 @@ function fileEntry(name: string): CleanerDirEntry {
   };
 }
 
+function dirEntry(name: string): CleanerDirEntry {
+  return {
+    name,
+    isDirectory: () => true,
+    isFile: () => false,
+    isSymbolicLink: () => false,
+  };
+}
+
 function previewFsStub(): CleanerFs {
   return {
     readdir: async () => [fileEntry('a.tmp'), fileEntry('b.tmp')],
@@ -161,10 +170,11 @@ async function waitForTerminal(events: CleanupProgressEvent[]): Promise<Terminal
   return events.find(isTerminal)!;
 }
 
-function expectIpcCode(run: () => unknown, code: string): void {
+async function expectIpcCode(run: () => unknown, code: string): Promise<void> {
   let thrown: unknown = null;
   try {
-    run();
+    // startDelete теперь async: и синхронный throw, и rejection ловятся одинаково.
+    await run();
   } catch (error) {
     thrown = error;
   }
@@ -184,7 +194,7 @@ describe('cleaner manager', () => {
   it('runs a single deletion cycle and emits one correlated terminal event', async () => {
     const { fs, unlinked } = deleteFsStub();
     const { manager, events, preview } = await setupManager(fs);
-    const { operationId } = manager.startDelete({
+    const { operationId } = await manager.startDelete({
       sessionId: preview.sessionId,
       candidateIds: selectedIds(preview),
     });
@@ -206,12 +216,12 @@ describe('cleaner manager', () => {
   it('rejects concurrent delete and preview while an operation is active', async () => {
     const control = gatedDeleteFs();
     const { manager, events, preview } = await setupManager(control.fs);
-    const { operationId } = manager.startDelete({
+    const { operationId } = await manager.startDelete({
       sessionId: preview.sessionId,
       candidateIds: selectedIds(preview),
     });
     await control.started;
-    expectIpcCode(
+    await expectIpcCode(
       () =>
         manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) }),
       IPC_ERROR_CODES.CLEAN_ALREADY_ACTIVE
@@ -224,7 +234,7 @@ describe('cleaner manager', () => {
     expect(terminal.operationId).toBe(operationId);
     expect(terminal.status).toBe('completed');
     // После завершения операции следующий запуск проходит.
-    const next = manager.startDelete({
+    const next = await manager.startDelete({
       sessionId: preview.sessionId,
       candidateIds: selectedIds(preview),
     });
@@ -237,7 +247,7 @@ describe('cleaner manager', () => {
   it('cancels remaining work; repeated or foreign cancels are safe no-ops', async () => {
     const control = gatedDeleteFs();
     const { manager, events, preview } = await setupManager(control.fs);
-    const { operationId } = manager.startDelete({
+    const { operationId } = await manager.startDelete({
       sessionId: preview.sessionId,
       candidateIds: selectedIds(preview),
     });
@@ -258,15 +268,15 @@ describe('cleaner manager', () => {
   it('validates session and selection before starting an operation', async () => {
     const { fs, unlinked } = deleteFsStub();
     const { manager, preview } = await setupManager(fs);
-    expectIpcCode(
+    await expectIpcCode(
       () => manager.startDelete({ sessionId: 'nope', candidateIds: ['x'] }),
       IPC_ERROR_CODES.CLEAN_SESSION_NOT_FOUND
     );
-    expectIpcCode(
+    await expectIpcCode(
       () => manager.startDelete({ sessionId: preview.sessionId, candidateIds: [] }),
       IPC_ERROR_CODES.CLEAN_EMPTY_SELECTION
     );
-    expectIpcCode(
+    await expectIpcCode(
       () =>
         manager.startDelete({
           sessionId: preview.sessionId,
@@ -290,7 +300,7 @@ describe('cleaner manager', () => {
     });
     const preview = await manager.preview(['user-temp']);
     nowMs = CLEANUP_SESSION_TTL_MS + 1;
-    expectIpcCode(
+    await expectIpcCode(
       () =>
         manager.startDelete({
           sessionId: preview.sessionId,
@@ -308,7 +318,7 @@ describe('cleaner manager', () => {
       allowed: false,
       code: IPC_ERROR_CODES.CLEAN_PROTECTED_PATH,
     });
-    expectIpcCode(
+    await expectIpcCode(
       () =>
         manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) }),
       IPC_ERROR_CODES.CLEAN_PROTECTED_PATH
@@ -327,7 +337,7 @@ describe('cleaner manager', () => {
       deleteFs: fs,
     });
     const preview = await manager.preview(['user-temp']);
-    manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
+    await manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
     const terminal = await waitForTerminal(events);
     expect(events[0]).toMatchObject({ status: 'running', phase: 'validating' });
     expect(events.filter(isTerminal)).toHaveLength(1);
@@ -337,7 +347,7 @@ describe('cleaner manager', () => {
   it('shows a partial failure instead of a full success', async () => {
     const { fs } = deleteFsStub({ errors: { [aPath]: 'EPERM' } });
     const { manager, events, preview } = await setupManager(fs);
-    manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
+    await manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
     const terminal = await waitForTerminal(events);
     expect(terminal.status).toBe('completed');
     expect(terminal.report).toMatchObject({ deleted: 1, failed: 1, freedBytes: 20 });
@@ -355,7 +365,7 @@ describe('cleaner manager', () => {
       deleteFs: fs,
     });
     const preview = await manager.preview(['user-temp']);
-    manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
+    await manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) });
     // Ни unhandled rejection (упал бы прогон vitest), ни зависшей активной операции.
     await vi.waitFor(() => expect(manager.isActive()).toBe(false));
     expect(unlinked.sort()).toEqual([aPath, bPath].sort());
@@ -364,12 +374,12 @@ describe('cleaner manager', () => {
   it('keeps events of a finished operation from being attributed to the next run', async () => {
     const { fs } = deleteFsStub();
     const { manager, events, preview } = await setupManager(fs);
-    const first = manager.startDelete({
+    const first = await manager.startDelete({
       sessionId: preview.sessionId,
       candidateIds: selectedIds(preview),
     });
     await waitForTerminal(events);
-    const second = manager.startDelete({
+    const second = await manager.startDelete({
       sessionId: preview.sessionId,
       candidateIds: selectedIds(preview),
     });
@@ -382,5 +392,107 @@ describe('cleaner manager', () => {
     expect(firstEvents.filter(isTerminal)).toHaveLength(1);
     expect(secondEvents.filter(isTerminal)).toHaveLength(1);
     expect(firstEvents.length + secondEvents.length).toBe(events.length);
+  });
+
+  it('re-resolves browser rules at delete time so a vanished cache root blocks the run', async () => {
+    const testLocal = 'C:\\SD-CleanerTest\\Local';
+    const testRoaming = 'C:\\SD-CleanerTest\\Roaming';
+    const chromeBase = `${testLocal}\\Google\\Chrome\\User Data`;
+    const profilePath = `${chromeBase}\\Default`;
+    const cacheRoot = `${profilePath}\\Cache`;
+    let cachePresent = true;
+    const previewFs: CleanerFs = {
+      readdir: async (path) => {
+        if (path === chromeBase) {
+          return [dirEntry('Default')];
+        }
+        if (path === profilePath) {
+          return [fileEntry('Preferences'), dirEntry('Cache')];
+        }
+        if (path === cacheRoot && cachePresent) {
+          return [fileEntry('data_0')];
+        }
+        throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+      },
+      stat: async () => ({ size: 10, mtimeMs: PREVIEW_MTIME, isFile: () => true }),
+    };
+    const events: CleanupProgressEvent[] = [];
+    const { fs: deleteFs, unlinked } = deleteFsStub();
+    const manager = new CleanerManager({
+      send: (event) => events.push(event),
+      throttleMs: 0,
+      previewFs,
+      deleteFs,
+      // Окружение инжектируется (PAT-001): тест не зависит от реального %LOCALAPPDATA%.
+      env: { LOCALAPPDATA: testLocal, APPDATA: testRoaming },
+    });
+    const preview = await manager.preview(['browser-cache']);
+    expect(preview.candidates).toHaveLength(1);
+    expect(preview.candidates[0]).toMatchObject({
+      browser: 'chrome',
+      profile: 'Default',
+      cacheKind: 'Cache',
+    });
+    expect(preview.sources[0]).toMatchObject({ status: 'ok', candidateCount: 1 });
+    // После превью каталог кэша исчез: свежее обнаружение не даёт allow-правила.
+    cachePresent = false;
+    await expect(
+      manager.startDelete({ sessionId: preview.sessionId, candidateIds: selectedIds(preview) })
+    ).rejects.toMatchObject({ code: IPC_ERROR_CODES.CLEAN_OUTSIDE_RULES });
+    expect(manager.isActive()).toBe(false);
+    expect(unlinked).toEqual([]);
+  });
+
+  it('rejects a preview that arrives while a delete is still starting', async () => {
+    const testLocal = 'C:\\SD-CleanerTest\\Local';
+    const testRoaming = 'C:\\SD-CleanerTest\\Roaming';
+    const chromeBase = `${testLocal}\\Google\\Chrome\\User Data`;
+    const testRoot = `${testLocal}\\Temp`;
+    // Обнаружение профилей блокируется только после первого превью: так окно между
+    // синхронным резервом стартующей операции и установкой active становится видимым.
+    let holdDiscovery = false;
+    let releaseDiscovery: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      releaseDiscovery = resolve;
+    });
+    const previewFs: CleanerFs = {
+      readdir: async (path) => {
+        if (holdDiscovery && path === chromeBase) {
+          await gate;
+        }
+        if (path === testRoot) {
+          return [fileEntry('a.tmp'), fileEntry('b.tmp')];
+        }
+        throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+      },
+      stat: async () => ({ size: 10, mtimeMs: PREVIEW_MTIME, isFile: () => true }),
+    };
+    const events: CleanupProgressEvent[] = [];
+    const manager = new CleanerManager({
+      send: (event) => events.push(event),
+      throttleMs: 0,
+      previewFs,
+      deleteFs: deleteFsStub().fs,
+      env: { LOCALAPPDATA: testLocal, APPDATA: testRoaming },
+    });
+    const preview = await manager.preview(['user-temp']);
+    expect(preview.candidates).toHaveLength(2);
+
+    holdDiscovery = true;
+    const starting = manager.startDelete({
+      sessionId: preview.sessionId,
+      candidateIds: selectedIds(preview),
+    });
+    // Пока идёт обнаружение, preview не должен успеть создать новую сессию и подменить
+    // уже выбранный для удаления набор (issue #58).
+    await expect(manager.preview(['user-temp'])).rejects.toMatchObject({
+      code: IPC_ERROR_CODES.CLEAN_ALREADY_ACTIVE,
+    });
+    expect(manager.isActive()).toBe(true);
+
+    releaseDiscovery();
+    await starting;
+    await waitForTerminal(events);
+    expect(manager.isActive()).toBe(false);
   });
 });

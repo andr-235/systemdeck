@@ -9,6 +9,7 @@ import {
   isRecycleVolumePath,
   matchesCleanupRule,
   minAgeHoursFor,
+  type CleanupRule,
 } from './rules';
 
 const LOG_DIR = 'C:\\Users\\alice\\AppData\\Roaming\\SystemDeck\\logs';
@@ -105,10 +106,31 @@ describe('cleaner rules registry', () => {
     expect(findCleanupRule('C:\\Windows\\System32\\LogFiles\\setup.etl', rules)).toBeUndefined();
   });
 
-  it('matches a Cache segment under the browser-cache allow root', () => {
-    const rule = ruleFor('browser-cache');
-    const path = `${rule.allowRoot}\\Chrome\\User Data\\Default\\Cache\\data_0`;
-    expect(matchesCleanupRule(path, rule)).toBe(true);
+  it('never builds a static browser-cache rule: profiles are the only source', () => {
+    const rules = cleanerRules({}, LOG_DIR);
+    expect(fileRuleFor('browser-cache', rules)).toBeUndefined();
+    // Широкое правило #54 (весь %LOCALAPPDATA% + сегмент Cache) удалено (issue #58).
+    expect(
+      findCleanupRule(
+        'C:\\Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache\\data_0',
+        rules
+      )
+    ).toBeUndefined();
+  });
+
+  it('matches any content strictly under an exact cache root when the rule has no pattern', () => {
+    const rule: CleanupRule = {
+      kind: 'file',
+      category: 'browser-cache',
+      allowRoot: 'C:\\Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache',
+      browser: 'chrome',
+      profile: 'Default',
+      cacheKind: 'Cache',
+    };
+    expect(matchesCleanupRule(`${rule.allowRoot}\\data_0`, rule)).toBe(true);
+    expect(matchesCleanupRule(`${rule.allowRoot}\\Cache_Data\\f_1`, rule)).toBe(true);
+    expect(matchesCleanupRule(rule.allowRoot, rule)).toBe(false);
+    expect(matchesCleanupRule(`${rule.allowRoot}2\\data_0`, rule)).toBe(false);
   });
 
   it('never treats a file allow root itself as junk, unlike the recycle volume root', () => {

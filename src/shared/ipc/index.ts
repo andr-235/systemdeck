@@ -51,6 +51,8 @@ export {
   type StorageScanCancelResponse,
   type ScanProgressEvent,
   type CleanupCategory,
+  type CleanupBrowser,
+  type CleanupCacheKind,
   type CleanupCandidate,
   type CleanupItemResult,
   type CleanupReport,
